@@ -13,13 +13,22 @@ import type {
   Registrador
 } from '../types/api.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
   private baseURL: string;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
+  }
+
+  private buildQuery(params?: Record<string, any>) {
+    if (!params) return '';
+    const qs = Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+      .join('&');
+    return qs ? `?${qs}` : '';
   }
 
   private async makeRequest<T>(
@@ -104,8 +113,10 @@ class ApiClient {
   }
 
   // Esquelas endpoints
-  async getEsquelas(): Promise<EsquelaResponse[]> {
-    return this.get<EsquelaResponse[]>('/esquelas/');
+  // List esquelas with optional filters and pagination
+  async getEsquelas(params?: Record<string, any>): Promise<any> {
+    const qs = this.buildQuery(params);
+    return this.get<any>(`/esquelas/${qs}`);
   }
 
   async createEsquela(esquela: EsquelaCreate): Promise<EsquelaResponse> {
@@ -167,6 +178,46 @@ class ApiClient {
 
   async getRegistrador(id: number): Promise<Registrador> {
     return this.get<Registrador>(`/registradores/${id}`);
+  }
+
+  // Courses endpoints
+  async getCourses(): Promise<any> {
+    return this.get<any>('/courses/');
+  }
+
+  async getCourse(id: number): Promise<any> {
+    return this.get<any>(`/courses/${id}`);
+  }
+
+  async getCourseStudents(courseId: number, params?: Record<string, any>): Promise<any> {
+    const qs = this.buildQuery(params);
+    return this.get<any>(`/courses/${courseId}/students${qs}`);
+  }
+
+  async getCourseTeachers(courseId: number, params?: Record<string, any>): Promise<any> {
+    const qs = this.buildQuery(params);
+    return this.get<any>(`/courses/${courseId}/teachers${qs}`);
+  }
+
+  // Aggregations & reports
+  async getEsquelasAggregateByCourse(year?: number): Promise<any> {
+    const qs = this.buildQuery({ year });
+    return this.get<any>(`/esquelas/aggregate/by-course${qs}`);
+  }
+
+  async getEsquelasAggregateByPeriod(group_by: string = 'year'): Promise<any> {
+    const qs = this.buildQuery({ group_by });
+    return this.get<any>(`/esquelas/aggregate/by-period${qs}`);
+  }
+
+  async getStudentEsquelas(studentId: number, params?: Record<string, any>): Promise<any> {
+    const qs = this.buildQuery(params);
+    return this.get<any>(`/students/${studentId}/esquelas${qs}`);
+  }
+
+  async getReportsRanking(params: Record<string, any>): Promise<any> {
+    const qs = this.buildQuery(params);
+    return this.get<any>(`/reports/ranking${qs}`);
   }
 }
 
