@@ -29,6 +29,9 @@
   let selectedStudentId: number | null = null;
   let studentStats: any = null;
 
+  // Mapeo de estudiante a curso
+  let studentToCourseMap: Map<number, any> = new Map();
+
   // Mapeo de códigos a SVG icons (sin emojis)
   const tipoIconos: Record<string, string> = {
     'reconocimiento': 'trophy',
@@ -55,7 +58,8 @@
       'x': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
       'trash': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
       'alert-circle': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>',
-      'file': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>'
+      'file': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>',
+      'user': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
     };
     return icons[iconName] || icons['file'];
   }
@@ -63,8 +67,9 @@
   let categoriaSeleccionada: string | null = null;
 
   onMount(async () => {
-    await cargarDatos();
     await loadCourses();
+    await loadStudentCourseMapping();
+    await cargarDatos();
   });
 
   async function loadCourses() {
@@ -74,6 +79,28 @@
     } catch (err) {
       console.error('Error loading courses:', err);
       courses = [];
+    }
+  }
+
+  async function loadStudentCourseMapping() {
+    try {
+      // Cargar todos los cursos y sus estudiantes
+      for (const course of courses) {
+        const students = await apiClient.get(`/api/courses/${course.id_curso}/students`);
+        if (Array.isArray(students)) {
+          students.forEach((student: any) => {
+            studentToCourseMap.set(student.id_estudiante, {
+              id_curso: course.id_curso,
+              nombre_curso: course.nombre_curso,
+              grado: course.grado,
+              paralelo: course.paralelo
+            });
+          });
+        }
+      }
+      studentToCourseMap = studentToCourseMap; // Trigger reactivity
+    } catch (err) {
+      console.error('Error loading student-course mapping:', err);
     }
   }
 
@@ -101,6 +128,7 @@
       } else {
         esquelas = [];
       }
+      console.log('Esquelas data sample:', esquelas[0]); // Debug: ver estructura completa
       codigos = Array.isArray(codigosData) ? codigosData : [];
       error = '';
     } catch (err: any) {
@@ -532,6 +560,28 @@
             <span class="esquela-fecha">{formatearFecha(esquela.fecha)}</span>
           </div>
           
+          <!-- Información del estudiante y curso -->
+          {#if esquela.estudiante}
+            {@const curso = studentToCourseMap.get(esquela.estudiante.id_estudiante)}
+            <div class="esquela-student-info">
+              <div class="student-name">
+                <span class="icon-inline">{@html getIconSvg('user')}</span>
+                <strong>{esquela.estudiante.nombres} {esquela.estudiante.apellido_paterno} {esquela.estudiante.apellido_materno}</strong>
+              </div>
+              <div class="student-details">
+                {#if esquela.estudiante.ci}
+                  <span class="student-ci">CI: {esquela.estudiante.ci}</span>
+                {/if}
+                {#if curso}
+                  <span class="student-course">
+                    <span class="icon-inline">{@html getIconSvg('book-open')}</span>
+                    {curso.nombre_curso || `${curso.grado}${curso.paralelo}`}
+                  </span>
+                {/if}
+              </div>
+            </div>
+          {/if}
+          
           <h3 class="esquela-titulo">{primerCodigo.descripcion}</h3>
           
           <div class="esquela-info">
@@ -740,6 +790,63 @@
   .esquela-card.reconocimiento {
     border-color: #22d3ee;
     background: linear-gradient(135deg, rgba(34, 211, 238, 0.05) 0%, white 100%);
+  }
+
+  .esquela-student-info {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .student-name,
+  .course-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #475569;
+  }
+
+  .student-details {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-left: 1.5rem;
+    font-size: 0.85rem;
+    color: #64748b;
+    flex-wrap: wrap;
+  }
+
+  .student-ci {
+    color: #64748b;
+  }
+
+  .student-course {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #475569;
+  }
+
+  .student-course .icon-inline {
+    width: 14px;
+    height: 14px;
+    color: #22d3ee;
+  }
+
+  .student-name strong {
+    color: #1e293b;
+    font-weight: 600;
+  }
+
+  .student-name .icon-inline {
+    width: 16px;
+    height: 16px;
+    color: #22d3ee;
   }
 
   .loading {

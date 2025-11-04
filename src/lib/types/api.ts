@@ -13,6 +13,21 @@ export interface EsquelaResponse {
   fecha: string;
   observaciones: string;
   codigos: CodigoEsquela[];
+  estudiante?: {
+    id_estudiante: number;
+    nombre_completo: string;
+    ci: string;
+  };
+  curso?: {
+    id_curso: number;
+    nombre_curso: string;
+    grado: string;
+    paralelo: string;
+  };
+  profesor?: {
+    id_persona: number;
+    nombre_completo: string;
+  };
 }
 
 export interface EsquelaCreate {

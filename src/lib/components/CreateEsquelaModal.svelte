@@ -12,6 +12,7 @@
   let estudiantes: Estudiante[] = [];
   let profesores: Profesor[] = [];
   let registradores: Registrador[] = [];
+  let cursos: any[] = [];
 
   // Campos del formulario
   let idEstudiante = 0;
@@ -25,6 +26,7 @@
   let searchEstudiante = '';
   let searchProfesor = '';
   let searchRegistrador = '';
+  let filtroCurso: number | null = null; // Filtro por curso
   let showEstudianteDropdown = false;
   let showProfesorDropdown = false;
   let showRegistradorDropdown = false;
@@ -43,19 +45,42 @@
 
   async function cargarListas() {
     try {
-      const [estudiantesData, profesoresData, registradoresData] = await Promise.all([
+      const [estudiantesData, profesoresData, registradoresData, cursosData] = await Promise.all([
         apiClient.getEstudiantes(),
         apiClient.getProfesores(),
-        apiClient.getRegistradores()
+        apiClient.getRegistradores(),
+        apiClient.getCourses()
       ]);
       
       estudiantes = estudiantesData;
       profesores = profesoresData;
       registradores = registradoresData;
+      cursos = Array.isArray(cursosData) ? cursosData : [];
     } catch (err: any) {
       console.error('Error cargando listas:', err);
       error = err.message;
     }
+  }
+
+  async function cargarEstudiantesPorCurso(cursoId: number) {
+    try {
+      const estudiantesDelCurso = await apiClient.get(`/api/courses/${cursoId}/students`);
+      estudiantes = Array.isArray(estudiantesDelCurso) ? estudiantesDelCurso : [];
+    } catch (err: any) {
+      console.error('Error cargando estudiantes del curso:', err);
+    }
+  }
+
+  async function handleCursoChange() {
+    if (filtroCurso) {
+      await cargarEstudiantesPorCurso(filtroCurso);
+    } else {
+      // Recargar todos los estudiantes
+      const estudiantesData = await apiClient.getEstudiantes();
+      estudiantes = estudiantesData;
+    }
+    // Limpiar selección de estudiante al cambiar curso
+    deseleccionarEstudiante();
   }
 
   function filtrarEstudiantes() {
@@ -168,6 +193,7 @@
     searchEstudiante = '';
     searchProfesor = '';
     searchRegistrador = '';
+    filtroCurso = null;
     estudianteSeleccionado = null;
     profesorSeleccionado = null;
     registradorSeleccionado = null;
@@ -209,6 +235,24 @@
         {/if}
 
         <form on:submit|preventDefault={crearEsquela}>
+          <!-- Filtro por Curso -->
+          <div class="form-group">
+            <label for="filtroCurso">Filtrar Estudiantes por Curso</label>
+            <select 
+              id="filtroCurso"
+              bind:value={filtroCurso}
+              on:change={handleCursoChange}
+              class="curso-select"
+            >
+              <option value={null}>-- Todos los cursos --</option>
+              {#each cursos as curso}
+                <option value={curso.id_curso}>
+                  {curso.nombre_curso || `${curso.grado}${curso.paralelo}`}
+                </option>
+              {/each}
+            </select>
+          </div>
+
           <!-- Estudiante -->
           <div class="form-group">
             <label>Estudiante *</label>
@@ -463,7 +507,8 @@
   }
 
   .form-group input,
-  .form-group textarea {
+  .form-group textarea,
+  .form-group select {
     width: 100%;
     padding: 0.75rem;
     border: 2px solid #e2e8f0;
@@ -473,9 +518,19 @@
   }
 
   .form-group input:focus,
-  .form-group textarea:focus {
+  .form-group textarea:focus,
+  .form-group select:focus {
     outline: none;
     border-color: #22d3ee;
+  }
+
+  .curso-select {
+    background-color: #f8fafc;
+    cursor: pointer;
+  }
+
+  .curso-select:hover {
+    background-color: #f1f5f9;
   }
 
   .codigos-grid {
