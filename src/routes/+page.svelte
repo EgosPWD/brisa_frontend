@@ -1,11 +1,20 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { authService } from '$lib/services/auth.js';
+  import { authService } from '$lib/services/Usuarios_Roles/auth';
 
-  onMount(() => {
-    // Redirigir directamente a esquelas si está autenticado
-    if (authService.isAuthenticated()) {
-      window.location.href = '/esquelas';
+  onMount(async () => {
+    // Revisamos si hay token
+    const token = authService.getToken();
+
+    if (token) {
+      try {
+        // Opcional: validar token llamando al backend
+        await authService.getMe();
+        window.location.href = '/esquelas';
+      } catch {
+        // Token inválido o expirado
+        window.location.href = '/login';
+      }
     } else {
       window.location.href = '/login';
     }

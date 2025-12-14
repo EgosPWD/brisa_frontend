@@ -1,11 +1,14 @@
+<!--src/routes/esquelas/+page.svelte-->
+
 <script lang="ts">
   import './esquela.css';
   import { onMount } from 'svelte';
   import { apiClient } from '$lib/services/api.js';
-  import { authService } from '$lib/services/auth.js';
+  import { authStore } from '$lib/stores/Usuarios_Roles/auth.svelte'; // ✅ Usar authStore
   import type { EsquelaResponse, CodigoEsquela } from '$lib/types/api.js';
   import CreateEsquelaModal from '$lib/components/CreateEsquelaModal/CreateEsquelaModal.svelte';
   import { getIconSvg } from '$lib/components/svg';
+  
   let searchQuery = '';
   let esquelas: EsquelaResponse[] = [];
   let codigos: CodigoEsquela[] = [];
@@ -16,8 +19,8 @@
   // Nuevos filtros
   let courses: any[] = [];
   let selectedCourse: number | null = null;
-  let nameFilter = ''; // Filtro por nombre de estudiante
-  let typeFilter: string | null = null; // 'reconocimiento' | 'orientacion'
+  let nameFilter = '';
+  let typeFilter: string | null = null;
   let dateFrom: string | null = null;
   let dateTo: string | null = null;
   let selectedYear: number | null = null;
@@ -34,7 +37,7 @@
   // Mapeo de estudiante a curso
   let studentToCourseMap: Map<number, any> = new Map();
 
-  // Mapeo de códigos a SVG icons (sin emojis)
+  // Mapeo de códigos a SVG icons
   const tipoIconos: Record<string, string> = {
     'reconocimiento': 'trophy',
     'orientacion': 'clipboard-list',
@@ -43,7 +46,6 @@
     'comportamiento': 'heart',
     'participacion': 'star'
   };
-
 
   let categoriaSeleccionada: string | null = null;
 
@@ -157,33 +159,23 @@
       if (dateFrom) params.from = dateFrom;
       if (dateTo) params.to = dateTo;
 
-      // Get user data directly from localStorage
-      let currentUser = authService.getUserData();
-
-      // If id_persona is missing, refresh user data from API
-      if (!currentUser?.id_persona) {
-        console.log('⚠️ id_persona no encontrado en localStorage, llamando a /auth/me...');
-        try {
-          currentUser = await authService.getCurrentUser();
-        } catch (e) {
-          console.error("❌ Error al actualizar datos de usuario:", e);
-        }
-      }
-
+      // USAR authStore en lugar de authService
+      const currentUser = authStore.user;
+      
       console.log('🔍 Usuario actual para ranking:', currentUser);
-      console.log('🔍 id_persona:', currentUser?.id_persona);
+      console.log('🔍 usuario_id:', currentUser?.usuario_id);
 
-      const isAdmin = currentUser?.roles?.some((role: any) => 
-        role?.nombre === 'Administrativo' || role?.nombre === 'Administrador'
-      );
-
+      // Verificar si es administrador usando el store
+      const isAdmin = authStore.esAdministrador;
+      
       console.log('🔍 Es admin?:', isAdmin);
 
-      if (!isAdmin && currentUser?.id_persona) {
-        params.registrador_id = currentUser.id_persona;
+      // Si no es admin, filtrar por el usuario actual
+      if (!isAdmin && currentUser?.usuario_id) {
+        params.registrador_id = currentUser.usuario_id;
         console.log('✅ Agregando registrador_id:', params.registrador_id);
       } else {
-        console.log('ℹ️ No se agrega registrador_id (es admin o no hay id_persona)');
+        console.log('ℹ️ No se agrega registrador_id (es admin o no hay usuario_id)');
       }
 
       console.log('📤 Parámetros finales para ranking:', params);

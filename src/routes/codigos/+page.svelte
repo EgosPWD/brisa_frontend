@@ -1,3 +1,5 @@
+<!--src/routes/codigos/+page.svelte - CORREGIDO-->
+
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -5,12 +7,13 @@
   import type { CodigoEsquela, CodigoEsquelaCreate, TipoCodigoEsquela } from '$lib/types/api.js';
   import './Codigopage.css';
   import { getIconSvg } from '$lib/components/svg.js';
-  import { authService } from '$lib/services/auth.js';
+  import { authService } from '$lib/services/Usuarios_Roles/auth';
 
   let codigos: CodigoEsquela[] = [];
   let loading = true;
   let error = '';
   let isAuthorized = false;
+  let currentUser: any = null; // ✅ Declarar variable para el usuario
   
   // Modal states
   let showCreateModal = false;
@@ -29,20 +32,42 @@
   let searchQuery = '';
 
   onMount(async () => {
-    const currentUser = authService.getUserData();
-    if (!userIsAdmin(currentUser)) {
-      await goto('/esquelas');
-      return;
-    }
+    // ✅ Obtener usuario usando el endpoint /me que SÍ existe
+    try {
+      const response = await authService.getMe();
+      currentUser = response.data; // El usuario viene en response.data
+      
+      if (!userIsAdmin(currentUser)) {
+        await goto('/esquelas');
+        return;
+      }
 
-    isAuthorized = true;
-    await loadCodigos();
+      isAuthorized = true;
+      await loadCodigos();
+    } catch (err) {
+      console.error('Error obteniendo usuario:', err);
+      await goto('/login');
+    }
   });
 
   function userIsAdmin(user: any): boolean {
-    return Boolean(user?.roles?.some((role: any) => 
-      role?.nombre === 'Administrativo' || role?.nombre === 'Administrador' || role?.nombre === 'Director'
-    ));
+    // ✅ Verificar tanto por el campo 'rol' como por 'roles'
+    if (!user) return false;
+    
+    // Si tiene campo 'rol' (string)
+    if (user.rol) {
+      const rolValido = ['Administrativo', 'Administrador', 'Director'].includes(user.rol);
+      if (rolValido) return true;
+    }
+    
+    // Si tiene campo 'roles' (array)
+    if (user.roles && Array.isArray(user.roles)) {
+      return user.roles.some((role: any) => 
+        ['Administrativo', 'Administrador', 'Director'].includes(role?.nombre || role)
+      );
+    }
+    
+    return false;
   }
 
   async function loadCodigos() {
@@ -96,26 +121,22 @@
         return;
       }
 
-      // Validar longitud del código (máximo 10 caracteres)
       if (formData.codigo.length > 10) {
         alert('El código no puede tener más de 10 caracteres');
         return;
       }
 
-      // Validar que el tipo sea válido
       if (formData.tipo !== 'reconocimiento' && formData.tipo !== 'orientacion') {
         alert('El tipo debe ser "reconocimiento" u "orientacion"');
         return;
       }
 
       console.log('📤 Payload para crear código:', formData);
-
       await apiClient.createCodigoEsquela(formData);
       await loadCodigos();
       closeModals();
     } catch (err: any) {
       console.error('❌ Error creando código:', err);
-      console.error('❌ Detalles del error:', err.details);
       alert('Error al crear el código: ' + (err.message || 'Error desconocido'));
     }
   }
@@ -129,26 +150,22 @@
         return;
       }
 
-      // Validar longitud del código (máximo 10 caracteres)
       if (formData.codigo.length > 10) {
         alert('El código no puede tener más de 10 caracteres');
         return;
       }
 
-      // Validar que el tipo sea válido
       if (formData.tipo !== 'reconocimiento' && formData.tipo !== 'orientacion') {
         alert('El tipo debe ser "reconocimiento" u "orientacion"');
         return;
       }
 
       console.log('📤 Payload para actualizar código:', formData);
-
       await apiClient.updateCodigoEsquela(editingCodigo.id_codigo, formData);
       await loadCodigos();
       closeModals();
     } catch (err: any) {
       console.error('❌ Error actualizando código:', err);
-      console.error('❌ Detalles del error:', err.details);
       alert('Error al actualizar el código: ' + (err.message || 'Error desconocido'));
     }
   }
@@ -323,8 +340,9 @@
 
   <!-- Create Modal -->
   {#if showCreateModal}
-    <div class="modal-overlay" on:click={closeModals}>
-      <div class="modal-content" on:click|stopPropagation>
+    <!-- ✅ CORREGIDO: Agregar role y quitar handler duplicado -->
+    <div class="modal-overlay" on:click={closeModals} role="presentation">
+      <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true">
         <div class="modal-header">
           <h2>Crear Nuevo Código</h2>
           <button class="btn-close" on:click={closeModals} aria-label="Cerrar">
@@ -379,8 +397,9 @@
 
   <!-- Edit Modal -->
   {#if showEditModal && editingCodigo}
-    <div class="modal-overlay" on:click={closeModals}>
-      <div class="modal-content" on:click|stopPropagation>
+    <!-- ✅ CORREGIDO: Agregar role -->
+    <div class="modal-overlay" on:click={closeModals} role="presentation">
+      <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true">
         <div class="modal-header">
           <h2>Editar Código</h2>
           <button class="btn-close" on:click={closeModals} aria-label="Cerrar">

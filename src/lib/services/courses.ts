@@ -1,13 +1,23 @@
 import { http } from './http';
-import { authService } from './auth';
+import { authService } from '../services/Usuarios_Roles/auth';
 
 export const coursesService = {
+
 	getCourses: async () => {
-		let id_persona = authService.getUserData()?.id_persona;
-		// Refresca datos de usuario si no están en localStorage
+
+		// Obtener usuario desde el backend
+		let me = await authService.getMe().catch(() => null);
+		let id_persona = me?.id_persona;
+
+		// Si por alguna razón no devuelve nada, intentar leer el token
 		if (!id_persona) {
-			const user = await authService.getCurrentUser();
-			id_persona = user?.id_persona;
+			const tokenData = authService.getToken();
+			if (tokenData) {
+				try {
+					const parsed = JSON.parse(tokenData);
+					id_persona = parsed?.id_persona;
+				} catch {}
+			}
 		}
 		return http.get<any>(`/courses/${http.buildQuery({ id_persona })}`);
 	},
