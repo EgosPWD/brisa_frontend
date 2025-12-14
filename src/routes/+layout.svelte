@@ -10,10 +10,12 @@
 	import { authStore } from "$lib/stores/Usuarios_Roles/auth.svelte";
 	import { getIconSvg } from "$lib/components/svg.js";
 	import type { ModuloSistema } from "$lib/types/Usuarios_Roles/auth";
+	import LogoutDialog from "./LogoutDialog.svelte";
 
 	let { children } = $props();
 	let sidebarCollapsed = $state(false);
 	let reportesManuallyToggled = $state(false);
+	let showLogoutDialog = $state(false);
 	const isAuthenticated = $derived(authStore.isAuthenticated);
 	const currentUser = $derived(authStore.user);
 	const canManageCodigos = $derived(authStore.esAdministrador);
@@ -123,11 +125,18 @@
 		}
 	});
 
-	async function handleLogout() {
-		if (confirm("¿Está seguro que desea cerrar sesión?")) {
-			authStore.logout();
-			goto("/login");
-		}
+	function handleLogout() {
+		showLogoutDialog = true;
+	}
+
+	function confirmLogout() {
+		authStore.logout();
+		goto("/login");
+		showLogoutDialog = false;
+	}
+
+	function cancelLogout() {
+		showLogoutDialog = false;
 	}
 
 	function userIsAdmin(user: any): boolean {
@@ -293,7 +302,10 @@
 
 		<div class="main-content-wrapper">
 			<header class="top-bar">
-				<div class="search-bar"></div>
+				<div class="search-bar">
+					<input type="text" placeholder="Buscar..." />
+					<span class="search-icon">{@html getIconSvg("search")}</span>
+				</div>
 				<div class="top-bar-actions">
 					<button class="action-btn notification-btn">
 						{@html getIconSvg("bell")}
@@ -327,3 +339,13 @@
 		<p>Verificando sesión...</p>
 	</div>
 {/if}
+
+<LogoutDialog 
+	bind:show={showLogoutDialog} 
+	on:confirm={confirmLogout}
+	on:cancel={cancelLogout}
+/>
+
+<style>
+	@import './layout.css';
+</style>

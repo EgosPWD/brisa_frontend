@@ -4,6 +4,8 @@
   import { onMount } from 'svelte';
   import { RolesService } from '../../../../lib/services/Usuarios_Roles/rolesService';
   import AsignarUsuarioRolModal from "../../users/modals/AsignarUsuarioRolModal.svelte";
+  import DeleteConfirmDialog from "../modals/DeleteConfirmDialog.svelte";
+  import ErrorDialog from "../modals/ErrorDialog.svelte";
 
   
   interface Props {
@@ -38,6 +40,15 @@
   let deletingRoleId = $state<number | null>(null);
   let showAsignarModal = $state(false);
   let roleDetail = $state<Role | null>(null); 
+  let showDeleteDialog = $state(false);
+  let roleToDelete = $state<Role | null>(null);
+  let showErrorDialog = $state(false);
+  let errorInfo = $state({
+    title: "Error",
+    message: "",
+    code: null as number | null,
+    details: ""
+  });
   
   onMount(async () => {
     if (rolesFromProps && rolesFromProps.length > 0) {
@@ -49,14 +60,14 @@
   });
   
   $effect(() => {
-  // 👉 1. Escuchar cambios desde props
-  if (rolesFromProps && rolesFromProps.length > 0) {
-    console.log('📊 Roles actualizados desde props:', rolesFromProps);
-    roles = [...rolesFromProps];
-  }
+    // 👉 1. Escuchar cambios desde props
+    if (rolesFromProps && rolesFromProps.length > 0) {
+      console.log('📊 Roles actualizados desde props:', rolesFromProps);
+      roles = [...rolesFromProps];
+    }
 
-  // 👉 2. Cargar detalle solo cuando el modal se abre
-  if (isOpen && role) {
+    // 👉 2. Cargar detalle solo cuando el modal se abre
+    if (isOpen && role) {
       loadRoleDetail();
     }
   });
@@ -95,7 +106,6 @@
 
   async function handleUsuarioAsignado() {
     showAsignarModal = false;
-    // Recargar detalles del rol
     await loadRoleDetail();
   }
 
@@ -141,44 +151,76 @@
     console.log('Ver detalle del rol:', role);
     onViewDetail(role);
   };
-  
+
   async function handleEditar(role: Role) {
-  try {
-    console.log('🔄 Cargando rol completo con permisos...');
-    const rolCompleto = await RolesService.obtenerRol(role.id_rol);
-    console.log('✅ Rol completo cargado:', rolCompleto);
-    onEdit(rolCompleto); // Pasar rol completo, no solo el básico
-  } catch (error) {
-    console.error('❌ Error al cargar rol:', error);
-    alert('Error al cargar el rol para editar');
+    try {
+      console.log('🔄 Cargando rol completo con permisos...');
+      const rolCompleto = await RolesService.obtenerRol(role.id_rol);
+      console.log('✅ Rol completo cargado:', rolCompleto);
+      onEdit(rolCompleto);
+    } catch (error) {
+      console.error('❌ Error al cargar rol:', error);
+      alert('Error al cargar el rol para editar');
+    }
   }
-}
   
-  const handleEliminar = async (role: Role) => {
-    const confirmar = confirm(
-      `¿Estás seguro de que deseas eliminar el rol "${role.nombre}"?\n\n` +
-      `Esta acción no se puede deshacer.`
-    );
-    
-    if (!confirmar) return;
+  const handleEliminar = (role: Role) => {
+    roleToDelete = role;
+    showDeleteDialog = true;
+  };
+
+  const confirmDelete = async () => {
+    if (!roleToDelete) return;
     
     try {
-      deletingRoleId = role.id_rol;
+      deletingRoleId = roleToDelete.id_rol;
+      showDeleteDialog = false; // ✅ Cerrar modal de confirmación
       
-      await RolesService.eliminarRol(role.id_rol);
+      await RolesService.eliminarRol(roleToDelete.id_rol);
       
-      // ✅ Actualizar lista localmente
-      roles = roles.filter(r => r.id_rol !== role.id_rol);
-      
+      const idToDelete = roleToDelete.id_rol;
+      roles = roles.filter(r => r.id_rol !== idToDelete);
       console.log('✅ Rol eliminado exitosamente');
-      onDelete(role.id_rol);
+      onDelete(roleToDelete.id_rol);
+      
+      roleToDelete = null;
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Error al eliminar el rol';
-      console.error('❌ Error al eliminar rol:', err);
-      alert(`Error: ${errorMsg}`);
+      const error = err as any;
+      
+      // Detectar tipo de error por mensaje
+      let errorCode = null;
+      let title = "Error al Eliminar Rol";
+      
+      if (error.message?.includes('Sesión expirada')) {
+        errorCode = 401;
+        title = "Sesión Expirada";
+      } else if (error.message?.includes('permisos')) {
+        errorCode = 403;
+        title = "Sin Permisos";
+      } else if (error.message?.includes('no existe')) {
+        errorCode = 404;
+        title = "Rol No Encontrado";
+      }
+      
+      errorInfo = {
+        title,
+        message: error.message || 'Error desconocido al eliminar el rol',
+        code: errorCode,
+        details: errorCode === 401 ? 'Por favor, vuelve a iniciar sesión.' : ''
+      };
+      
+      // ✅ NO reabrir el modal de confirmación, solo mostrar el error
+      showErrorDialog = true;
+      roleToDelete = null; // ✅ Limpiar el rol a eliminar
     } finally {
       deletingRoleId = null;
     }
+  };
+
+  // ✅ FUNCIÓN CORREGIDA - cancelDelete
+  const cancelDelete = () => {
+    showDeleteDialog = false;
+    roleToDelete = null;
   };
   
   // ✅ Función pública para agregar rol a la lista
@@ -331,6 +373,31 @@
     </div>
   {/if}
 </div>
+
+<!-- ✅ MODAL DE ELIMINACIÓN CON CONDICIONAL -->
+{#if showDeleteDialog && roleToDelete}
+  <DeleteConfirmDialog
+    bind:show={showDeleteDialog}
+    title="Eliminar Rol"
+    message="¿Estás seguro de que deseas eliminar el rol"
+    itemName={roleToDelete.nombre}
+    warningText="Esta acción no se puede deshacer."
+    on:confirm={confirmDelete}
+    on:cancel={cancelDelete}
+  />
+{/if}
+
+<!-- ✅ MODAL DE ERROR - Solo se muestra cuando NO hay modal de confirmación -->
+{#if showErrorDialog && !showDeleteDialog}
+  <ErrorDialog
+    bind:show={showErrorDialog}
+    title={errorInfo.title}
+    message={errorInfo.message}
+    errorCode={errorInfo.code}
+    details={errorInfo.details}
+    on:close={() => showErrorDialog = false}
+  />
+{/if}
 
 <AsignarUsuarioRolModal
   role={roleDetail}

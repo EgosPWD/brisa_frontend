@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { api } from '../../../lib/services/api';
   import ModalCambiarPassword from './modals/ModalCambiarPassword.svelte';
 
@@ -54,7 +55,7 @@
   });
 
   function goBack() {
-    (window as any).navigateTo?.('dashboard');
+    goto('/');
   }
 </script>
 
