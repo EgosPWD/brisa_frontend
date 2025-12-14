@@ -1,4 +1,4 @@
-// src/stores/auth.svelte.ts - Actualizado con permisos detallados
+// src/stores/auth.svelte.ts - SOLUCIÓN CORREGIDA
 import type { User, AuthState, ModuloSistema } from '../../types/Usuarios_Roles/auth';
 import { api } from '../../services/api';
 
@@ -59,6 +59,13 @@ class AuthStore {
   async login(usuario: string, password: string) {
     try {
       console.log('🔐 Intentando login para:', usuario);
+      
+      // ✅ CORRECCIÓN: NO limpiar antes del login
+      // Solo limpiar el estado en memoria (no localStorage todavía)
+      this.state.user = null;
+      this.state.token = null;
+      this.state.isAuthenticated = false;
+      
       const response = await api.login(usuario, password);
       
       if (response.success && response.data) {
@@ -71,11 +78,12 @@ class AuthStore {
           permisos 
         } = response.data;
         
-        // ✅ Guardar token con la clave correcta
+        // ✅ PASO 1: Guardar token en localStorage PRIMERO
         localStorage.setItem(this.TOKEN_KEY, access_token);
-        console.log('✅ Token guardado en localStorage:', this.TOKEN_KEY);
+        console.log('✅ Token guardado en localStorage');
         
-        // Actualizar estado básico
+        // ✅ PASO 2: Actualizar estado en memoria
+        this.state.token = access_token;
         this.state.user = {
           usuario_id,
           usuario: username,
@@ -83,21 +91,22 @@ class AuthStore {
           rol,
           permisos
         };
-        this.state.token = access_token;
         this.state.isAuthenticated = true;
         
-        console.log('✅ Usuario autenticado:', username);
+        console.log('✅ Estado actualizado. isAuthenticated:', this.state.isAuthenticated);
         
-        // ✅ CARGAR PERMISOS DETALLADOS DESPUÉS DEL LOGIN
+        // ✅ PASO 3: Cargar permisos detallados
         await this.cargarPermisosDetallados();
         
+        console.log('✅ Login completo para:', username);
         return response;
       }
       
       throw new Error('Respuesta de login inválida');
     } catch (error) {
       console.error('❌ Error en login:', error);
-      this.logout();
+      // ✅ Solo limpiar si el login falló
+      this.clearAuth();
       throw error;
     }
   }
@@ -107,43 +116,42 @@ class AuthStore {
     
     // Intentar cerrar sesión en el servidor
     if (this.state.token) {
-      api.logout().catch(() => {
-        console.warn('⚠️ No se pudo cerrar sesión en el servidor');
+      api.logout().catch((error) => {
+        console.warn('⚠️ No se pudo cerrar sesión en el servidor:', error);
       });
     }
     
-    // Limpiar localStorage con las claves correctas
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-    console.log('🗑️ Token eliminado de localStorage');
+    // ✅ Limpiar TODO
+    this.clearAuth();
     
-    // Limpiar estado
-    this.state.user = null;
-    this.state.token = null;
-    this.state.isAuthenticated = false;
-    
-    console.log('✅ Sesión cerrada');
+    console.log('✅ Sesión cerrada completamente');
   }
 
   async init() {
     console.log('🔄 Inicializando authStore...');
+    this.state.isLoading = true;
     
-    // ✅ Buscar token con la clave correcta
-    const token = localStorage.getItem(this.TOKEN_KEY);
-    
-    if (!token) {
-      console.log('⚠️ No se encontró token en localStorage');
-      this.state.isLoading = false;
-      return;
-    }
-
-    console.log('✅ Token encontrado, verificando con el backend...');
-
     try {
-      // Verificar token con el backend
+      // ✅ PASO 1: Buscar token en localStorage
+      const token = localStorage.getItem(this.TOKEN_KEY);
+      
+      if (!token) {
+        console.log('⚠️ No se encontró token en localStorage');
+        this.state.isLoading = false;
+        return;
+      }
+
+      console.log('✅ Token encontrado:', token.substring(0, 20) + '...');
+
+      // ✅ PASO 2: Actualizar estado con el token ANTES de verificar
+      this.state.token = token;
+
+      // ✅ PASO 3: Verificar token con el backend
+      console.log('🔍 Verificando token con el backend...');
       const response = await api.getMe();
       
       if (response.success && response.data) {
+        // ✅ Token válido - Actualizar usuario
         this.state.user = {
           usuario_id: response.data.id_usuario,
           usuario: response.data.usuario,
@@ -151,39 +159,34 @@ class AuthStore {
           rol: response.data.rol || 'Usuario',
           permisos: response.data.permisos || []
         };
-        this.state.token = token;
         this.state.isAuthenticated = true;
         
         console.log('✅ Usuario verificado:', this.state.user.usuario);
         
-        // ✅ CARGAR PERMISOS DETALLADOS AL INICIAR
+        // ✅ Cargar permisos detallados
         await this.cargarPermisosDetallados();
       } else {
         console.warn('⚠️ Respuesta inválida del backend');
-        this.logout();
+        this.clearAuth();
       }
     } catch (error) {
       console.error('❌ Error verificando token:', error);
-      this.logout();
+      // ✅ Si falla la verificación, limpiar todo
+      this.clearAuth();
     } finally {
       this.state.isLoading = false;
-      console.log('✅ AuthStore inicializado');
+      console.log('✅ AuthStore inicializado. isAuthenticated:', this.state.isAuthenticated);
     }
   }
 
   // ========== CARGAR PERMISOS DETALLADOS ==========
 
-  /**
-   * 📋 Cargar permisos detallados desde el backend
-   * Se llama automáticamente después del login y al init
-   */
   async cargarPermisosDetallados() {
     try {
       console.log('📋 Cargando permisos detallados...');
       const response = await api.getMisPermisos();
       
       if (response.success && response.data && this.state.user) {
-        // Actualizar usuario con permisos detallados
         this.state.user = {
           ...this.state.user,
           permisos_detallados: response.data.permisos,
@@ -195,7 +198,7 @@ class AuthStore {
         
         console.log('✅ Permisos detallados cargados:', {
           modulos: response.data.modulos_accesibles,
-          acciones: response.data.acciones_disponibles.length,
+          acciones: response.data.acciones_disponibles?.length || 0,
           esAdmin: response.data.es_administrador
         });
       }
@@ -207,115 +210,43 @@ class AuthStore {
 
   // ========== VALIDACIÓN DE PERMISOS ==========
 
-  /**
-   * ✅ Verificar si tiene UN permiso específico (formato antiguo)
-   */
   hasPermission(permiso: string): boolean {
     return this.state.user?.permisos.includes(permiso) || false;
   }
 
-  /**
-   * 🔒 Verificar si puede acceder a un módulo
-   * Usa el nuevo sistema de permisos detallados
-   */
   puedeAccederModulo(modulo: ModuloSistema): boolean {
-    // Si es administrador, puede todo
-    if (this.esAdministrador) {
-      return true;
-    }
-    
-    // Verificar si el módulo está en la lista de accesibles
+    if (this.esAdministrador) return true;
     return this.modulosAccesibles.includes(modulo);
   }
 
-  /**
-   * 🎯 Verificar si puede realizar una acción específica
-   * Ejemplo: puedeRealizarAccion("crear_usuario")
-   */
   puedeRealizarAccion(accion: string): boolean {
-    // Si es administrador, puede todo
-    if (this.esAdministrador) {
-      return true;
-    }
-    
-    // Verificar si la acción está en la lista de disponibles
+    if (this.esAdministrador) return true;
     return this.accionesDisponibles.includes(accion);
   }
 
-  /**
-   * 📊 Obtener permisos de un módulo específico
-   * Ejemplo: getPermisosModulo("usuarios") -> ["Lectura", "Agregar"]
-   */
   getPermisosModulo(modulo: ModuloSistema): string[] {
     return this.permisosPorModulo[modulo] || [];
   }
 
-  /**
-   * 🔐 Verificar si tiene un permiso específico en un módulo
-   * Ejemplo: tienePermisoEnModulo("usuarios", "Modificar")
-   */
   tienePermisoEnModulo(modulo: ModuloSistema, permiso: string): boolean {
-    // Si es administrador, puede todo
-    if (this.esAdministrador) {
-      return true;
-    }
-    
+    if (this.esAdministrador) return true;
     const permisosModulo = this.getPermisosModulo(modulo);
     return permisosModulo.includes(permiso);
   }
 
   // ========== HELPERS ÚTILES ==========
 
-  /**
-   * 📋 Obtener lista de módulos que puede ver en el menú
-   */
   getModulosMenu() {
     const modulosMenu = [
-      { 
-        id: 'usuarios', 
-        nombre: 'Usuarios y Roles',
-        icon: 'users',
-        ruta: 'usuarios'
-      },
-      { 
-        id: 'esquelas', 
-        nombre: 'Esquelas',
-        icon: 'document',
-        ruta: 'esquelas'
-      },
-      { 
-        id: 'incidentes', 
-        nombre: 'Incidentes',
-        icon: 'alert',
-        ruta: 'incidentes'
-      },
-      { 
-        id: 'retiros_tempranos', 
-        nombre: 'Retiros Tempranos',
-        icon: 'exit',
-        ruta: 'retiros'
-      },
-      { 
-        id: 'reportes', 
-        nombre: 'Reportes',
-        icon: 'chart',
-        ruta: 'reportes'
-      },
-      { 
-        id: 'profesores', 
-        nombre: 'Profesores',
-        icon: 'academic',
-        ruta: 'profesores'
-      },
-      { 
-        id: 'administracion', 
-        nombre: 'Administración',
-        icon: 'settings',
-        ruta: 'administracion'
-      }
+      { id: 'usuarios', nombre: 'Usuarios y Roles', icon: 'users', ruta: 'usuarios' },
+      { id: 'esquelas', nombre: 'Esquelas', icon: 'document', ruta: 'esquelas' },
+      { id: 'incidentes', nombre: 'Incidentes', icon: 'alert', ruta: 'incidentes' },
+      { id: 'retiros_tempranos', nombre: 'Retiros Tempranos', icon: 'exit', ruta: 'retiros' },
+      { id: 'reportes', nombre: 'Reportes', icon: 'chart', ruta: 'reportes' },
+      { id: 'profesores', nombre: 'Profesores', icon: 'academic', ruta: 'profesores' },
+      { id: 'administracion', nombre: 'Administración', icon: 'settings', ruta: 'administracion' }
     ];
 
-    // Filtrar solo los módulos a los que tiene acceso
     return modulosMenu.filter(modulo => 
       this.puedeAccederModulo(modulo.id as ModuloSistema)
     );
@@ -339,16 +270,32 @@ class AuthStore {
       return false;
     } catch (error) {
       console.error('❌ Error al refrescar token:', error);
-      this.logout();
+      this.clearAuth();
       return false;
     }
   }
 
-  // ========== CLEAR AUTH (Útil para debugging) ==========
+  // ========== ✅ CLEAR AUTH MEJORADO ==========
 
   clearAuth() {
     console.log('🧹 Limpiando autenticación completa...');
-    this.logout();
+    
+    // 1. Limpiar localStorage
+    try {
+      localStorage.removeItem(this.TOKEN_KEY);
+      localStorage.removeItem(this.USER_KEY);
+      console.log('🗑️ localStorage limpiado');
+    } catch (error) {
+      console.error('❌ Error al limpiar localStorage:', error);
+    }
+    
+    // 2. Resetear estado a valores iniciales
+    this.state.user = null;
+    this.state.token = null;
+    this.state.isAuthenticated = false;
+    // NO cambiar isLoading aquí, se maneja en init()
+    
+    console.log('✅ Estado reseteado. isAuthenticated:', this.state.isAuthenticated);
   }
 }
 

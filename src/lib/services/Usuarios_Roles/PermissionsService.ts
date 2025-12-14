@@ -14,7 +14,7 @@ export class PermissionsService {
   // OBTENER HEADERS DE AUTORIZACIÓN
   // ------------------------------
   private static async getAuthHeaders() {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('brisa_auth_token');
 
     if (!token) {
       throw new Error('No autenticado. Por favor inicia sesión.');

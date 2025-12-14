@@ -17,7 +17,7 @@ class UsersStore {
   error = $state<string | null>(null);
 
   private async getAuthHeaders() {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('brisa_auth_token');
 
     if (!token) {
       throw new Error('No autenticado. Por favor inicia sesión.');
