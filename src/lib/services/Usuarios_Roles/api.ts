@@ -1,5 +1,5 @@
 // services/api.ts - VERSIÓN COMPLETA CON PERMISOS
-import type { LoginRequest, LoginResponse, ApiError } from '../../types/Usuarios_y_Roles/auth';
+import type { LoginRequest, LoginResponse, ApiError } from '../../types/Usuarios_Roles/auth';
 
 const API_URL = 'http://localhost:8000';
 
@@ -11,7 +11,7 @@ class ApiService {
   }
 
   private getToken(): string | null {
-    return localStorage.getItem('token');
+    return localStorage.getItem('brisa_auth_token');
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

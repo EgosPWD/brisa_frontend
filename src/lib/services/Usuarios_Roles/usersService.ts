@@ -16,7 +16,7 @@ const API_BASE_URL = 'http://localhost:8000/api/auth';
  * Obtener headers de autenticación
  */
 async function getAuthHeaders(): Promise<HeadersInit> {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('brisa_auth_token');
 
   if (!token) {
     throw new Error('No autenticado. Por favor inicia sesión.');
