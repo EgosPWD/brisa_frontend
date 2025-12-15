@@ -26,5 +26,8 @@
 		"onlyBuiltDependencies": [
 			"esbuild"
 		]
+	},
+	"dependencies": {
+		"xlsx": "^0.18.5"
 	}
 }

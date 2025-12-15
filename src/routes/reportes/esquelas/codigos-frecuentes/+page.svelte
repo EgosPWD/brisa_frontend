@@ -4,6 +4,7 @@
 	import { apiClient } from '$lib/services/api.js';
 	import { getIconSvg } from '$lib/components/svg.js';
 	import type { CodigosFrecuentesResponseDTO } from '$lib/types/api.js';
+	import * as XLSX from 'xlsx';
 
 	let reporte = $state<CodigosFrecuentesResponseDTO | null>(null);
 	let loading = $state(true);
@@ -43,6 +44,23 @@
 		fecha_desde = '';
 		fecha_hasta = '';
 		cargarReporte();
+	}
+
+	function exportarExcel() {
+		if (!reporte || !reporte.codigos.length) return;
+
+		const data = reporte.codigos.map(c => ({
+			'Código': c.codigo,
+			'Descripción': c.descripcion,
+			'Tipo': c.tipo,
+			'Total Aplicaciones': c.total_aplicaciones,
+			'Porcentaje': c.porcentaje.toFixed(2) + '%'
+		}));
+
+		const worksheet = XLSX.utils.json_to_sheet(data);
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Códigos Frecuentes');
+		XLSX.writeFile(workbook, `codigos_frecuentes_${new Date().toISOString().split('T')[0]}.xlsx`);
 	}
 
 	function exportarCSV() {
@@ -85,6 +103,10 @@
 			<button class="btn btn-secondary" onclick={cargarReporte} disabled={loading}>
 				<span class="icon">{@html getIconSvg('refresh')}</span>
 				Actualizar
+			</button>
+			<button class="btn btn-success" onclick={exportarExcel} disabled={!reporte || !reporte.codigos.length}>
+				<span class="icon">{@html getIconSvg('download')}</span>
+				Exportar Excel
 			</button>
 			<button class="btn btn-primary" onclick={exportarCSV} disabled={!reporte || !reporte.codigos.length}>
 				<span class="icon">{@html getIconSvg('download')}</span>

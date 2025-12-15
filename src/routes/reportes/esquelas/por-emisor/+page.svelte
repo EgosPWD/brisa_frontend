@@ -4,6 +4,7 @@
 	import { apiClient } from '$lib/services/api.js';
 	import { getIconSvg } from '$lib/components/svg.js';
 	import type { EsquelasPorProfesorResponseDTO } from '$lib/types/api.js';
+	import * as XLSX from 'xlsx';
 
 	let reporte = $state<EsquelasPorProfesorResponseDTO | null>(null);
 	let loading = $state(true);
@@ -42,6 +43,24 @@
 		fecha_desde = '';
 		fecha_hasta = '';
 		cargarReporte();
+	}
+
+	function exportarExcel() {
+		if (!reporte || !reporte.profesores.length) return;
+
+		const data = reporte.profesores.map(p => ({
+			'Emisor ID': p.id_profesor,
+			'Emisor': p.profesor_nombre,
+			'CI': p.profesor_ci,
+			'Total Esquelas': p.total_esquelas,
+			'Reconocimientos': p.reconocimientos,
+			'Orientaciones': p.orientaciones
+		}));
+
+		const worksheet = XLSX.utils.json_to_sheet(data);
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Por Emisor');
+		XLSX.writeFile(workbook, `esquelas_por_emisor_${new Date().toISOString().split('T')[0]}.xlsx`);
 	}
 
 	function exportarCSV() {
@@ -83,6 +102,10 @@
 			<button class="btn btn-secondary" onclick={cargarReporte} disabled={loading}>
 				<span class="icon">{@html getIconSvg('refresh')}</span>
 				Actualizar
+			</button>
+			<button class="btn btn-success" onclick={exportarExcel} disabled={!reporte || !reporte.profesores.length}>
+				<span class="icon">{@html getIconSvg('download')}</span>
+				Exportar Excel
 			</button>
 			<button class="btn btn-primary" onclick={exportarCSV} disabled={!reporte || !reporte.profesores.length}>
 				<span class="icon">{@html getIconSvg('download')}</span>

@@ -5,6 +5,7 @@
 	import { apiClient } from '$lib/services/api';
 	import type { EstudianteListadoDTO, EstudianteListadoItem } from '$lib/types/api';
     import { getIconSvg } from '$lib/components/svg';
+	import * as XLSX from 'xlsx';
 
 	let loading = false;
 	let error: string | null = null;
@@ -67,8 +68,26 @@
 		if (exportFormat === 'csv') {
 			exportarCSV();
 		} else {
-			alert('Exportación a Excel próximamente disponible');
+			exportarExcel();
 		}
+	}
+
+	function exportarExcel() {
+		if (!reporte) return;
+
+		const data = reporte.estudiantes.map(est => ({
+			'ID': est.id_estudiante,
+			'CI': est.ci,
+			'Nombre Completo': est.nombre_completo,
+			'Fecha Nacimiento': est.fecha_nacimiento || '',
+			'Edad': est.edad || '',
+			'Cursos': est.cursos.join('; ') || ''
+		}));
+
+		const worksheet = XLSX.utils.json_to_sheet(data);
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Estudiantes');
+		XLSX.writeFile(workbook, `estudiantes_${new Date().toISOString().split('T')[0]}.xlsx`);
 	}
 
 	function exportarCSV() {

@@ -4,6 +4,7 @@
 	import { apiClient } from '$lib/services/api';
 	import type { HistorialCursosResponseDTO, EstudianteHistorialItem } from '$lib/types/api';
 	import { getIconSvg } from '$lib/components/svg';
+	import * as XLSX from 'xlsx';
 
 	let loading = false;
 	let error: string | null = null;
@@ -51,6 +52,45 @@
 		estudianteId = undefined;
 		searchTerm = '';
 		cargarReporte();
+	}
+
+	function exportarExcel() {
+		if (!reporte) return;
+
+		const data: any[] = [];
+		
+		filteredEstudiantes.forEach(est => {
+			if (est.cursos.length > 0) {
+				est.cursos.forEach(curso => {
+					data.push({
+						'ID Estudiante': est.id_estudiante,
+						'CI': est.ci,
+						'Nombre Completo': est.nombre_completo,
+						'ID Curso': curso.id_curso,
+						'Nombre Curso': curso.nombre_curso,
+						'Nivel': curso.nivel,
+						'Gestión': curso.gestion,
+						'Total Cursos': est.total_cursos
+					});
+				});
+			} else {
+				data.push({
+					'ID Estudiante': est.id_estudiante,
+					'CI': est.ci,
+					'Nombre Completo': est.nombre_completo,
+					'ID Curso': '-',
+					'Nombre Curso': '-',
+					'Nivel': '-',
+					'Gestión': '-',
+					'Total Cursos': 0
+				});
+			}
+		});
+
+		const worksheet = XLSX.utils.json_to_sheet(data);
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Historial');
+		XLSX.writeFile(workbook, `historial_cursos_${new Date().toISOString().split('T')[0]}.xlsx`);
 	}
 
 	function exportarCSV() {
@@ -183,13 +223,22 @@
 						Mostrando {filteredEstudiantes.length} resultado{filteredEstudiantes.length !== 1 ? 's' : ''} para: "{searchTerm}"
 					</p>
 				{/if}
-			</div>				<button 
+</div>				<div style="display: flex; gap: 0.5rem;">
+				<button 
+					class="btn btn-success" 
+					on:click={exportarExcel}
+					disabled={!filteredEstudiantes.length}
+				>
+					<span class="icon">{@html getIconSvg('download')}</span> Exportar Excel
+				</button>
+				<button 
 					class="btn btn-export" 
 					on:click={exportarCSV}
 					disabled={!filteredEstudiantes.length}
 				>
 					<span class="icon">{@html getIconSvg('download')}</span> Exportar CSV
 				</button>
+			</div>
 			</div>
 
 			{#if filteredEstudiantes.length === 0}

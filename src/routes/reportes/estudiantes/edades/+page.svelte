@@ -4,6 +4,7 @@
 	import { apiClient } from '$lib/services/api';
 	import type { DistribucionEdadResponseDTO, RangoEdadItem } from '$lib/types/api';
 	import { getIconSvg } from '$lib/components/svg';
+	import * as XLSX from 'xlsx';
 
 	let loading = false;
 	let error: string | null = null;
@@ -38,6 +39,21 @@
 		nivel = '';
 		gestion = '';
 		cargarReporte();
+	}
+
+	function exportarExcel() {
+		if (!reporte) return;
+
+		const data = reporte.distribucion.map(item => ({
+			'Rango de Edad': item.rango_edad,
+			'Cantidad': item.cantidad,
+			'Porcentaje': `${item.porcentaje}%`
+		}));
+
+		const worksheet = XLSX.utils.json_to_sheet(data);
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Distribución Etaria');
+		XLSX.writeFile(workbook, `distribucion_edad_${new Date().toISOString().split('T')[0]}.xlsx`);
 	}
 
 	function exportarCSV() {
@@ -159,6 +175,14 @@
 					<h3>Total Estudiantes: {reporte.total_estudiantes}</h3>
 				</div>
 
+<div style="display: flex; gap: 0.5rem;">
+				<button 
+					class="btn btn-success" 
+					on:click={exportarExcel}
+					disabled={!reporte.distribucion.length}
+				>
+					<span class="icon">{@html getIconSvg('download')}</span> Exportar Excel
+				</button>
 				<button 
 					class="btn btn-export" 
 					on:click={exportarCSV}
@@ -166,6 +190,7 @@
 				>
 					<span class="icon">{@html getIconSvg('download')}</span> Exportar CSV
 				</button>
+			</div>
 			</div>
 
 			{#if reporte.distribucion.length === 0}

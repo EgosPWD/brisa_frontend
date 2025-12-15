@@ -4,6 +4,7 @@
 	import { apiClient } from '$lib/services/api';
 	import type { EstudiantesApoderadosResponseDTO } from '$lib/types/api';
 	import { getIconSvg } from '$lib/components/svg';
+	import * as XLSX from 'xlsx';
 
 	let loading = false;
 	let error: string | null = null;
@@ -28,6 +29,30 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	function exportarExcel() {
+		if (!reporte) return;
+
+		const data = reporte.estudiantes.map(est => {
+			const padre = est.apoderados.find(a => a.tipo === 'padre');
+			const madre = est.apoderados.find(a => a.tipo === 'madre');
+			return {
+				'ID': est.id_estudiante,
+				'CI': est.ci,
+				'Nombre Completo': est.nombre_completo,
+				'Tiene Apoderados': est.tiene_apoderados ? 'Sí' : 'No',
+				'Nombre Padre': padre?.nombre_completo || '-',
+				'Teléfono Padre': padre?.telefono || '-',
+				'Nombre Madre': madre?.nombre_completo || '-',
+				'Teléfono Madre': madre?.telefono || '-'
+			};
+		});
+
+		const worksheet = XLSX.utils.json_to_sheet(data);
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Apoderados');
+		XLSX.writeFile(workbook, `estudiantes_apoderados_${new Date().toISOString().split('T')[0]}.xlsx`);
 	}
 
 	function exportarCSV() {
@@ -141,13 +166,22 @@
 		<div class="resultados-section">
 			<div class="resultados-header">
 				<h3>Listado Detallado</h3>
-				<button 
-					class="btn btn-export" 
-					on:click={exportarCSV}
-					disabled={!reporte.estudiantes.length}
-				>
-					<span class="icon">{@html getIconSvg('download')}</span> Exportar CSV
-				</button>
+				<div style="display: flex; gap: 0.5rem;">
+					<button 
+						class="btn btn-success" 
+						on:click={exportarExcel}
+						disabled={!reporte.estudiantes.length}
+					>
+						<span class="icon">{@html getIconSvg('download')}</span> Exportar Excel
+					</button>
+					<button 
+						class="btn btn-export" 
+						on:click={exportarCSV}
+						disabled={!reporte.estudiantes.length}
+					>
+						<span class="icon">{@html getIconSvg('download')}</span> Exportar CSV
+					</button>
+				</div>
 			</div>
 
 			{#if reporte.estudiantes.length === 0}

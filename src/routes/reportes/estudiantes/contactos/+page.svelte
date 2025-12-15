@@ -4,6 +4,7 @@
 	import { apiClient } from '$lib/services/api';
 	import type { ContactoApoderadoItem, ContactosApoderadosResponseDTO, TipoApoderado } from '$lib/types/api';
 	import { getIconSvg } from '$lib/components/svg';
+	import * as XLSX from 'xlsx';
 
 	let loading = false;
 	let error: string | null = null;
@@ -97,6 +98,25 @@
 		gestion = '';
 		expandedByStudentId = {};
 		cargarReporte();
+	}
+
+	function exportarExcel() {
+		if (!reporte) return;
+
+		const data = contactosAgrupados.map(item => ({
+			'Estudiante ID': item.id_estudiante,
+			'CI Estudiante': item.estudiante_ci,
+			'Estudiante': item.estudiante_nombre,
+			'Padre - Nombre': item.padre?.nombre ?? '',
+			'Padre - Teléfono': item.padre?.telefono ?? '',
+			'Madre - Nombre': item.madre?.nombre ?? '',
+			'Madre - Teléfono': item.madre?.telefono ?? ''
+		}));
+
+		const worksheet = XLSX.utils.json_to_sheet(data);
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Contactos');
+		XLSX.writeFile(workbook, `contactos_apoderados_${new Date().toISOString().split('T')[0]}.xlsx`);
 	}
 
 	function exportarCSV() {
@@ -220,6 +240,14 @@
 					<h3>Total Contactos: {reporte.total} • Estudiantes: {contactosAgrupados.length}</h3>
 				</div>
 
+<div style="display: flex; gap: 0.5rem;">
+				<button 
+					class="btn btn-success" 
+					on:click={exportarExcel}
+					disabled={!reporte.contactos.length}
+				>
+					<span class="icon">{@html getIconSvg('download')}</span> Exportar Excel
+				</button>
 				<button 
 					class="btn btn-export" 
 					on:click={exportarCSV}
@@ -227,6 +255,7 @@
 				>
 					<span class="icon">{@html getIconSvg('download')}</span> Exportar CSV
 				</button>
+			</div>
 			</div>
 
 			{#if reporte.contactos.length === 0}

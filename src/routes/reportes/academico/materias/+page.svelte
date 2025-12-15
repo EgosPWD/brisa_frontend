@@ -3,6 +3,7 @@
 	import { apiClient } from '$lib/services/api.js';
 	import { getIconSvg } from '$lib/components/svg.js';
 	import type { MateriasPorNivelResponseDTO } from '$lib/types/api.js';
+	import * as XLSX from 'xlsx';
 
 	let reporte = $state<MateriasPorNivelResponseDTO | null>(null);
 	let loading = $state(true);
@@ -29,6 +30,21 @@
 	function limpiarFiltros() {
 		nivel = '';
 		cargarReporte();
+	}
+
+	function exportarExcel() {
+		if (!reporte || !reporte.materias.length) return;
+
+		const data = reporte.materias.map(m => ({
+			'ID': m.id_materia,
+			'Nombre Materia': m.nombre_materia,
+			'Nivel': m.nivel
+		}));
+
+		const worksheet = XLSX.utils.json_to_sheet(data);
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Materias');
+		XLSX.writeFile(workbook, `materias_por_nivel_${new Date().toISOString().split('T')[0]}.xlsx`);
 	}
 
 	function exportarCSV() {
@@ -76,6 +92,10 @@
 			<button class="btn btn-secondary" onclick={cargarReporte} disabled={loading}>
 				<span class="icon">{@html getIconSvg('refresh')}</span>
 				Actualizar
+			</button>
+			<button class="btn btn-success" onclick={exportarExcel} disabled={!reporte || !reporte.materias.length}>
+				<span class="icon">{@html getIconSvg('download')}</span>
+				Exportar Excel
 			</button>
 			<button class="btn btn-primary" onclick={exportarCSV} disabled={!reporte || !reporte.materias.length}>
 				<span class="icon">{@html getIconSvg('download')}</span>
