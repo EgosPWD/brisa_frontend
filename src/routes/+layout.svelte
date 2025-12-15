@@ -35,7 +35,7 @@
 		{ label: "Retiros Tempranos", icon: "clock", href: "/retiros", modulo: "retiros_tempranos" as ModuloSistema },
 		{ label: "Incidentes", icon: "alert-triangle", href: "/incidentes", modulo: "incidentes" as ModuloSistema },
 		{ label: "Esquelas", icon: "clipboard-list", href: "/esquelas", modulo: "esquelas" as ModuloSistema },
-		{ label: "Administración", icon: "settings", href: "/administracion", modulo: "administracion" as ModuloSistema },
+		{ label: "Administrativos", icon: "settings", href: "/administrativos", modulo: "administracion" as ModuloSistema },
 	];
 
 	const reportesSubmenu = [

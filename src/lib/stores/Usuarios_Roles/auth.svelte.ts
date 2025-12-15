@@ -67,7 +67,7 @@ class AuthStore {
         } = response.data;
         
         // Guardar token
-        localStorage.setItem('token', access_token);
+        localStorage.setItem('brisa_auth_token', access_token);
         
         // Actualizar estado básico
         this.state.user = {
@@ -101,14 +101,14 @@ class AuthStore {
       });
     }
     
-    localStorage.removeItem('token');
+    localStorage.removeItem('brisa_auth_token');
     this.state.user = null;
     this.state.token = null;
     this.state.isAuthenticated = false;
   }
 
   async init() {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('brisa_auth_token');
     
     if (!token) {
       this.state.isLoading = false;
@@ -298,7 +298,7 @@ class AuthStore {
     try {
       const response = await api.refreshToken();
       if (response.success && response.data?.access_token) {
-        localStorage.setItem('token', response.data.access_token);
+        localStorage.setItem('brisa_auth_token', response.data.access_token);
         this.state.token = response.data.access_token;
         return true;
       }
