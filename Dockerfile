@@ -13,7 +13,7 @@ COPY . .
 RUN npm run build
 
 # Exponer el puerto que usará el servidor Node
-EXPOSE 5021
+EXPOSE 8182
 
 # Ejecutar el servidor generado por SvelteKit
 CMD ["node", "build"]
