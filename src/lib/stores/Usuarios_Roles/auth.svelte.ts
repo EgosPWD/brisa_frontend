@@ -152,16 +152,22 @@ class AuthStore {
       
       if (response.success && response.data) {
         // ✅ Token válido - Actualizar usuario
+        // 🔧 Extraer el rol del primer elemento del array roles
+        const rolPrincipal = response.data.roles && response.data.roles.length > 0 
+          ? response.data.roles[0].nombre 
+          : 'Usuario';
+        
         this.state.user = {
           usuario_id: response.data.id_usuario,
           usuario: response.data.usuario,
           nombres: response.data.nombres || '',
-          rol: response.data.rol || 'Usuario',
+          rol: rolPrincipal,
           permisos: response.data.permisos || []
         };
         this.state.isAuthenticated = true;
         
         console.log('✅ Usuario verificado:', this.state.user.usuario);
+        console.log('🎭 Rol asignado:', this.state.user.rol);
         
         // ✅ Cargar permisos detallados
         await this.cargarPermisosDetallados();
