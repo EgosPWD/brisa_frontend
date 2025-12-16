@@ -122,12 +122,12 @@
 	<div class="filters-card">
 		<div class="filters-grid">
 			<div class="filter-group">
-				<label for="profesor_id">CI Profesor</label>
+				<label for="profesor_id">ID Profesor</label>
 				<input 
 					type="number" 
 					id="profesor_id" 
 					bind:value={profesor_id}
-					placeholder="Ej: 1122334"
+					placeholder="Ej: 10"
 				/>
 			</div>
 			<div class="filter-group">
