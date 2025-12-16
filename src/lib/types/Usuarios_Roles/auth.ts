@@ -94,7 +94,9 @@ export type ModuloSistema =
   | 'retiros_tempranos'
   | 'reportes'
   | 'profesores'
-  | 'administracion';
+  | 'administracion'
+  | 'estudiantes'
+  | 'cursos';
 
 // src/lib/types/auth.ts
 export interface ApiError {
