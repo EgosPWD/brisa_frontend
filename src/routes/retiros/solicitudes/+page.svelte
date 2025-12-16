@@ -301,7 +301,6 @@
                             <th class="col-estudiante">Estudiante</th>
                         {:else}
                             <th class="col-solicitante">Solicitante</th>
-                            <th class="col-cant">Cantidad de Estudiantes</th>
                         {/if}
                         <th class="col-motivo">Motivo</th>
                         <th class="col-fecha">Salida Programada</th>
@@ -336,11 +335,7 @@
                                             "Solicitante"}
                                     </div>
                                 </td>
-                                <td class="col-cant">
-                                    <span class="badge badge-gray"
-                                        >{sol.cantidad_estudiantes || 0}</span
-                                    >
-                                </td>
+
                             {/if}
 
                             <td class="col-motivo"
@@ -638,8 +633,9 @@
     }
 
     .badge-gray {
-        background: #f1f5f9;
-        color: #64748b;
+        background: #e2e8f0;
+        color: #1e293b;
+        border: 1px solid #cbd5e1;
     }
 
     .icon-btn {

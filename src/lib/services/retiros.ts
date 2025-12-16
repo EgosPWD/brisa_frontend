@@ -57,13 +57,19 @@ export const retirosService = {
         http.put<SolicitudRetiro>(`${BASE_URL_SOLICITUDES}/${id}/derivar`, { observacion_derivacion: observacion }),
 
     aprobarSolicitud: (id: number, data: AprobarSolicitudDTO = {}) =>
-        http.put(`autorizaciones-retiro/${id}/decision`, { aprobado: true, ...data }),
+        http.put(`/autorizaciones-retiro/${id}/decision`, { 
+            decision: 'aprobada', 
+            motivo_decision: data.observacion || null 
+        }),
 
     rechazarSolicitud: (id: number, data: RechazarSolicitudDTO) =>
-        http.put(`autorizaciones-retiro/${id}/decision`, { aprobado: false, ...data }),
+        http.put(`/autorizaciones-retiro/${id}/decision`, { 
+            decision: 'rechazada', 
+            motivo_decision: data.justificacion 
+        }),
 
     registrarSalida: (id: number, data: RegistroSalidaCreate) =>
-        http.post<RegistroSalida>(`retiros-tempranos/registros-salida/individual`, { id_solicitud: id, ...data }),
+        http.post<RegistroSalida>(`/retiros-tempranos/registros-salida/individual`, { id_solicitud: id, ...data }),
 
     getSolicitudesPorEstudiante: (id_estudiante: number) =>
         http.get<SolicitudRetiro[]>(`${BASE_URL_SOLICITUDES}/estudiante/${id_estudiante}`),
@@ -91,11 +97,17 @@ export const retirosService = {
         http.put<SolicitudRetiroMasivo>(`${BASE_URL_SOLICITUDES_MASIVAS}/${id}/derivar`, { observacion_derivacion: observacion }),
 
     aprobarSolicitudMasiva: (id: number, data: AprobarSolicitudDTO = {}) =>
-        http.put<SolicitudRetiroMasivo>(`autorizaciones-retiro/masiva/${id}/decision`, { aprobado: true, ...data }),
+        http.put<SolicitudRetiroMasivo>(`/autorizaciones-retiro/masiva/${id}/decision`, { 
+            decision: 'aprobada', 
+            motivo_decision: data.observacion || null 
+        }),
 
     rechazarSolicitudMasiva: (id: number, data: RechazarSolicitudDTO) =>
-        http.put<SolicitudRetiroMasivo>(`autorizaciones-retiro/masiva/${id}/decision`, { aprobado: false, ...data }),
+        http.put<SolicitudRetiroMasivo>(`/autorizaciones-retiro/masiva/${id}/decision`, { 
+            decision: 'rechazada', 
+            motivo_decision: data.justificacion 
+        }),
 
     registrarSalidaMasiva: (id: number, data: RegistroSalidaCreate) =>
-        http.post<RegistroSalida[]>(`retiros-tempranos/registros-salida/masivo`, { id_solicitud_masiva: id, ...data }),
+        http.post<RegistroSalida[]>(`/retiros-tempranos/registros-salida/masivo`, { id_solicitud_masiva: id, ...data }),
 };
