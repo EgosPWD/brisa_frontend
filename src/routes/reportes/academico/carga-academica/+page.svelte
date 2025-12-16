@@ -122,12 +122,12 @@
 	<div class="filters-card">
 		<div class="filters-grid">
 			<div class="filter-group">
-				<label for="profesor_id">ID Profesor</label>
+				<label for="profesor_id">CI Profesor</label>
 				<input 
 					type="number" 
 					id="profesor_id" 
 					bind:value={profesor_id}
-					placeholder="Ej: 10"
+					placeholder="Ej: 1122334"
 				/>
 			</div>
 			<div class="filter-group">
@@ -284,4 +284,3 @@
 	@import '../../page.css';
 	@import './carga_academica.css';
 </style>
-

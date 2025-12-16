@@ -15,7 +15,41 @@
 	let nivel = $state<'inicial' | 'primaria' | 'secundaria' | ''>('');
 	let gestion = $state('');
 
+	// Datos para dropdowns
+	let cursos = $state<any[]>([]);
+	let materias = $state<any[]>([]);
+	let loadingCursos = $state(false);
+	let loadingMaterias = $state(false);
+
+	async function cargarCursos() {
+		loadingCursos = true;
+		try {
+			const data = await apiClient.getCourses();
+			cursos = Array.isArray(data) ? data : [];
+		} catch (err) {
+			console.error('Error cargando cursos:', err);
+			cursos = [];
+		} finally {
+			loadingCursos = false;
+		}
+	}
+
+	async function cargarMaterias() {
+		loadingMaterias = true;
+		try {
+			const data = await apiClient.getMaterias();
+			materias = Array.isArray(data) ? data : [];
+		} catch (err) {
+			console.error('Error cargando materias:', err);
+			materias = [];
+		} finally {
+			loadingMaterias = false;
+		}
+	}
+
 	onMount(() => {
+		cargarCursos();
+		cargarMaterias();
 		cargarReporte();
 	});
 
@@ -117,22 +151,15 @@
 	<div class="filters-card">
 		<div class="filters-grid">
 			<div class="filter-group">
-				<label for="curso_id">ID Curso</label>
-				<input 
-					type="number" 
-					id="curso_id" 
-					bind:value={curso_id}
-					placeholder="Ej: 5"
-				/>
-			</div>
-			<div class="filter-group">
-				<label for="materia_id">ID Materia</label>
-				<input 
-					type="number" 
-					id="materia_id" 
-					bind:value={materia_id}
-					placeholder="Ej: 3"
-				/>
+				<label for="curso_id">Curso</label>
+				<select id="curso_id" bind:value={curso_id} disabled={loadingCursos}>
+					<option value={undefined}>Todos los cursos</option>
+					{#each cursos as curso}
+						<option value={curso.id_curso}>
+							{curso.nombre_curso || `${curso.grado}° ${curso.paralelo} - ${curso.nivel}`}
+						</option>
+					{/each}
+				</select>
 			</div>
 			<div class="filter-group">
 				<label for="nivel">Nivel</label>
