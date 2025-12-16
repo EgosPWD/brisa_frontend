@@ -18,7 +18,8 @@
 
   // Nuevos filtros
   let courses: any[] = [];
-  let selectedCourse: number | null = null;
+  // En <select>, el value siempre llega como string. Usamos '' para representar "Todos".
+  let selectedCourse: string = '';
   let nameFilter = '';
   let typeFilter: string | null = null;
   let dateFrom: string | null = null;
@@ -37,6 +38,10 @@
   // Mapeo de estudiante a curso
   let studentToCourseMap: Map<number, any> = new Map();
 
+  // Curso seleccionado (para mostrar nombre sin depender de mapeos)
+  $: selectedCourseId = selectedCourse ? Number(selectedCourse) : null;
+  $: selectedCourseInfo = selectedCourseId ? courses.find((c) => c.id_curso === selectedCourseId) : null;
+
   // Mapeo de códigos a SVG icons
   const tipoIconos: Record<string, string> = {
     'reconocimiento': 'trophy',
@@ -51,7 +56,6 @@
 
   onMount(async () => {
     await loadCourses();
-    await loadStudentCourseMapping();
     await cargarDatos();
   });
 
@@ -66,34 +70,43 @@
     }
   }
 
-  async function loadStudentCourseMapping() {
+  async function loadStudentCourseMappingForCourse(courseId: number) {
     try {
-      // Cargar todos los cursos y sus estudiantes
-      for (const course of courses) {
-        const students = await apiClient.get(`/courses/${course.id_curso}/students`);
-        if (Array.isArray(students)) {
-          students.forEach((student: any) => {
-            studentToCourseMap.set(student.id_estudiante, {
-              id_curso: course.id_curso,
-              nombre_curso: course.nombre_curso,
-              grado: course.grado,
-              paralelo: course.paralelo
-            });
-          });
-        }
-      }
-      studentToCourseMap = studentToCourseMap; // Trigger reactivity
+      studentToCourseMap = new Map();
+      const course = courses.find((c) => c.id_curso === courseId);
+      const students = await apiClient.get(`/courses/${courseId}/students?page_size=10000`);
+
+      // Nota: este endpoint normalmente devuelve un DTO paginado con .data
+      const studentList = Array.isArray(students)
+        ? students
+        : (students && Array.isArray(students.data) ? students.data : []);
+
+      if (!Array.isArray(studentList)) return;
+
+      studentList.forEach((student: any) => {
+        studentToCourseMap.set(student.id_estudiante, {
+          id_curso: course?.id_curso ?? courseId,
+          nombre_curso: course?.nombre_curso,
+          grado: course?.grado,
+          paralelo: course?.paralelo
+        });
+      });
     } catch (err) {
-      console.error('Error loading student-course mapping:', err);
+      console.error('Error loading student-course mapping (single course):', err);
+      studentToCourseMap = new Map();
     }
   }
 
   async function cargarDatos() {
     try {
       loading = true;
+      // Resetear el mapeo para evitar mostrar cursos incorrectos entre filtros
+      studentToCourseMap = new Map();
+
       const params: any = {};
       if (nameFilter) params.name = nameFilter;
-      if (selectedCourse) params.course_id = selectedCourse;
+      // El backend espera `course` (no `course_id` / `curso_id`) para listar esquelas
+      if (selectedCourseId) params.course = selectedCourseId;
       if (typeFilter) params.type = typeFilter;
       if (dateFrom) params.from = dateFrom;
       if (dateTo) params.to = dateTo;
@@ -101,6 +114,11 @@
       if (selectedMonth) params.month = selectedMonth;
 
       console.log('🔍 Cargando esquelas con params:', params);
+
+      // Si el usuario filtró por curso, solo cargamos estudiantes de ese curso (1 request)
+      if (selectedCourseId) {
+        await loadStudentCourseMappingForCourse(selectedCourseId);
+      }
 
       // 1. Petición inicial para obtener datos y el total
       const [initialResponse, codigosData] = await Promise.all([
@@ -205,7 +223,7 @@
 
   function resetFilters() {
     nameFilter = '';
-    selectedCourse = null;
+    selectedCourse = '';
     typeFilter = null;
     dateFrom = null;
     dateTo = null;
@@ -324,7 +342,7 @@
       <div class="filter-group">
         <label for="course-filter">Curso</label>
         <select id="course-filter" bind:value={selectedCourse}>
-          <option value={null}>-- Todos los cursos --</option>
+          <option value="">-- Todos los cursos --</option>
           {#each courses as course}
             <option value={course.id_curso}>{course.nombre_curso}</option>
           {/each}
@@ -593,7 +611,12 @@
                 {#if esquela.estudiante.ci}
                   <span class="student-ci">CI: {esquela.estudiante.ci}</span>
                 {/if}
-                {#if curso}
+                {#if selectedCourseInfo}
+                  <span class="student-course">
+                    <span class="icon-inline">{@html getIconSvg('book-open')}</span>
+                    {selectedCourseInfo.nombre_curso}
+                  </span>
+                {:else if curso}
                   <span class="student-course">
                     <span class="icon-inline">{@html getIconSvg('book-open')}</span>
                     {curso.nombre_curso || `${curso.grado}${curso.paralelo}`}
