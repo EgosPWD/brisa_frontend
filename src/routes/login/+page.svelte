@@ -19,8 +19,31 @@
     error = '';
 
     try {
-      await authStore.login(usuario, contrasena);
-      window.location.href = '/esquelas';
+      const response = await authStore.login(usuario, contrasena);
+      
+      // 🎯 REDIRECCIÓN BASADA EN ROL
+      const userRole = authStore.user?.rol?.toLowerCase();
+      
+      console.log('🔍 [LOGIN] Usuario autenticado:', authStore.user?.usuario);
+      console.log('🎭 [LOGIN] Rol del usuario:', userRole);
+      
+      // Redirigir según el rol
+      if (userRole === 'apoderado') {
+        console.log('👨‍👩‍👧 [LOGIN] Apoderado detectado - redirigiendo a retiros');
+        window.location.href = '/retiros';
+      } else if (userRole === 'profesor') {
+        console.log('👨‍🏫 [LOGIN] Profesor detectado - redirigiendo a retiros');
+        window.location.href = '/retiros';
+      } else if (userRole === 'recepción' || userRole === 'recepcionista') {
+        console.log('🧑‍💼 [LOGIN] Recepcionista detectado - redirigiendo a retiros');
+        window.location.href = '/retiros';
+      } else if (userRole === 'regente') {
+        console.log('👔 [LOGIN] Regente detectado - redirigiendo a retiros');
+        window.location.href = '/retiros';
+      } else {
+        console.log('📝 [LOGIN] Otro rol - redirigiendo a esquelas');
+        window.location.href = '/esquelas';
+      }
     } catch (err: any) {
       error = err.message || 'Usuario o contraseña incorrectos';
       console.error('Error de login:', err);

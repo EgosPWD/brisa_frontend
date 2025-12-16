@@ -12,8 +12,12 @@
 	import type { ModuloSistema } from "$lib/types/Usuarios_Roles/auth";
 	import LogoutDialog from "./LogoutDialog.svelte";
 
-	import { obtenerNotificacionesUsuario, marcarNotificacionComoLeida, marcarTodasComoLeidas } from '$lib/services/incidentes/notificaciones';
-	import type { NotificacionRead } from '$lib/types/incidentes/notificaciones';
+	import {
+		obtenerNotificacionesUsuario,
+		marcarNotificacionComoLeida,
+		marcarTodasComoLeidas,
+	} from "$lib/services/incidentes/notificaciones";
+	import type { NotificacionRead } from "$lib/types/incidentes/notificaciones";
 
 	let { children } = $props();
 	let sidebarCollapsed = $state(false);
@@ -190,7 +194,6 @@
 
 	let pollingInterval: number | undefined;
 	onMount(() => {
-		
 		if (currentUser?.usuario_id) {
 			pollingInterval = setInterval(fetchUnreadCount, 60000);
 		}
@@ -203,10 +206,13 @@
 	async function fetchUnreadCount() {
 		if (!currentUser?.usuario_id) return;
 		try {
-			const unread = await obtenerNotificacionesUsuario(currentUser.usuario_id, true);
+			const unread = await obtenerNotificacionesUsuario(
+				currentUser.usuario_id,
+				true,
+			);
 			unreadCount = unread.length;
 		} catch (e) {
-			console.error('Error fetching unread count:', e);
+			console.error("Error fetching unread count:", e);
 		}
 	}
 
@@ -214,9 +220,13 @@
 		if (!currentUser?.usuario_id) return;
 		loadingNotifications = true;
 		try {
-			notifications = await obtenerNotificacionesUsuario(currentUser.usuario_id, false, 50); // Limitar a 50 recientes para no sobrecargar
+			notifications = await obtenerNotificacionesUsuario(
+				currentUser.usuario_id,
+				false,
+				50,
+			); // Limitar a 50 recientes para no sobrecargar
 		} catch (e) {
-			console.error('Error fetching notifications:', e);
+			console.error("Error fetching notifications:", e);
 		} finally {
 			loadingNotifications = false;
 		}
@@ -224,13 +234,13 @@
 
 	async function markAllAsRead() {
 		if (!currentUser?.usuario_id) return; // ✅ Validación temprana
-		
+
 		try {
 			await marcarTodasComoLeidas(currentUser.usuario_id); // ✅ Sin optional chaining
-			notifications.forEach(n => (n.leido = true));
+			notifications.forEach((n) => (n.leido = true));
 			unreadCount = 0;
 		} catch (e) {
-			console.error('Error marking all as read:', e);
+			console.error("Error marking all as read:", e);
 		}
 	}
 
@@ -242,9 +252,6 @@
 	function closeNotifications() {
 		showModal = false;
 	}
-
-
-
 
 	function handleLogout() {
 		showLogoutDialog = true;
@@ -429,7 +436,10 @@
 					>
 				</div>
 				<div class="top-bar-actions">
-					<button class="action-btn notification-btn" onclick={openNotifications}>
+					<button
+						class="action-btn notification-btn"
+						onclick={openNotifications}
+					>
 						{@html getIconSvg("bell")}
 						{#if unreadCount > 0}
 							<span class="badge">{unreadCount}</span>
@@ -457,22 +467,27 @@
 		</div>
 	</div>
 
-
 	{#if showModal}
-		<div class="notifications-modal" onclick={() => showModal = false}>
+		<div class="notifications-modal" onclick={() => (showModal = false)}>
 			<div class="modal-content">
 				<h2>Notificaciones</h2>
-				<button onclick={markAllAsRead}>Marcar todas como leídas</button>
+				<button onclick={markAllAsRead}>Marcar todas como leídas</button
+				>
 				{#if loadingNotifications}
 					<p>Cargando...</p>
 				{:else if notifications.length === 0}
 					<p>No hay notificaciones.</p>
 				{:else}
 					{#each notifications as notif}
-						<div class="notification-item" class:unread={!notif.leido}>
+						<div
+							class="notification-item"
+							class:unread={!notif.leido}
+						>
 							<h3>{notif.titulo}</h3>
 							<p>{notif.mensaje}</p>
-							<small>{new Date(notif.fecha).toLocaleString()}</small>
+							<small
+								>{new Date(notif.fecha).toLocaleString()}</small
+							>
 						</div>
 					{/each}
 				{/if}
@@ -480,7 +495,6 @@
 			</div>
 		</div>
 	{/if}
-
 {:else}
 	<!-- Pantalla de carga mientras se verifica autenticación -->
 	<div class="loading-container">
@@ -488,8 +502,6 @@
 		<p>Verificando sesión...</p>
 	</div>
 {/if}
-
-
 
 <LogoutDialog
 	bind:show={showLogoutDialog}
