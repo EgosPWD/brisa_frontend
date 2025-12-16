@@ -49,6 +49,12 @@
 			modulo: "usuarios" as ModuloSistema,
 		},
 		{
+			label: "Estudiantes",
+			icon: "users",
+			href: "/estudiantes",
+			modulo: "estudiantes" as ModuloSistema,
+		},
+		{
 			label: "Profesores",
 			icon: "user",
 			href: "/profesores",
@@ -57,8 +63,8 @@
 		{
 			label: "Cursos",
 			icon: "book-open",
-			href: "/profesores/cursos",
-			modulo: "profesores" as ModuloSistema,
+			href: "/cursos",
+			modulo: "cursos" as ModuloSistema,
 		},
 		{
 			label: "Materias",
