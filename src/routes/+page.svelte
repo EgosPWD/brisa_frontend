@@ -8,9 +8,32 @@
 
     if (token) {
       try {
-        // Opcional: validar token llamando al backend
-        await authService.getMe();
-        window.location.href = '/esquelas';
+        // Validar token y obtener información del usuario
+        const userData = await authService.getMe();
+        
+        // 🎯 REDIRECCIÓN BASADA EN ROL
+        const userRole = userData?.data?.rol?.toLowerCase();
+        
+        console.log('🔍 [HOME] Usuario autenticado:', userData?.data?.usuario);
+        console.log('🎭 [HOME] Rol del usuario:', userRole);
+        
+        // Redirigir según el rol
+        if (userRole === 'apoderado') {
+          console.log('👨‍👩‍👧 [HOME] Apoderado detectado - redirigiendo a retiros');
+          window.location.href = '/retiros';
+        } else if (userRole === 'profesor') {
+          console.log('👨‍🏫 [HOME] Profesor detectado - redirigiendo a retiros');
+          window.location.href = '/retiros';
+        } else if (userRole === 'recepción' || userRole === 'recepcionista') {
+          console.log('🧑‍💼 [HOME] Recepcionista detectado - redirigiendo a retiros');
+          window.location.href = '/retiros';
+        } else if (userRole === 'regente') {
+          console.log('👔 [HOME] Regente detectado - redirigiendo a retiros');
+          window.location.href = '/retiros';
+        } else {
+          console.log('📝 [HOME] Otro rol - redirigiendo a esquelas');
+          window.location.href = '/esquelas';
+        }
       } catch {
         // Token inválido o expirado
         window.location.href = '/login';

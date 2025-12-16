@@ -14,6 +14,107 @@ export function puedeGestionarProfesores(): boolean {
     return puede;
 }
 
+// ============================================================================
+// PERMISOS PARA RETIROS TEMPRANOS
+// ============================================================================
+
+/**
+ * Verifica si el usuario es un Apoderado
+ */
+export function esApoderado(): boolean {
+    const rol = authStore.user?.rol?.toLowerCase();
+    return rol === 'apoderado';
+}
+
+/**
+ * Verifica si el usuario es un Recepcionista
+ */
+export function esRecepcionista(): boolean {
+    const rol = authStore.user?.rol?.toLowerCase();
+    return rol === 'recepcionista' || rol === 'recepción';
+}
+
+/**
+ * Verifica si el usuario es un Regente
+ */
+export function esRegente(): boolean {
+    const rol = authStore.user?.rol?.toLowerCase();
+    return rol === 'regente';
+}
+
+/**
+ * Verifica si el usuario es un Profesor
+ */
+export function esProfesor(): boolean {
+    const rol = authStore.user?.rol?.toLowerCase();
+    return rol === 'profesor';
+}
+
+/**
+ * Verifica si el usuario puede crear solicitudes individuales
+ * Apoderados y Profesores pueden crear solicitudes individuales
+ */
+export function puedeCrearSolicitudIndividual(): boolean {
+    return esApoderado() || esProfesor();
+}
+
+/**
+ * Verifica si el usuario puede crear solicitudes masivas
+ * Solo Recepcionistas pueden crear solicitudes masivas
+ */
+export function puedeCrearSolicitudMasiva(): boolean {
+    return esRecepcionista();
+}
+
+/**
+ * Verifica si el usuario puede ver todas las solicitudes
+ * Recepcionistas y Regentes pueden ver todas las solicitudes
+ */
+export function puedeVerTodasLasSolicitudes(): boolean {
+    return esRecepcionista() || esRegente() || authStore.user?.rol === 'Admin';
+}
+
+/**
+ * Verifica si el usuario puede derivar solicitudes
+ * Solo Recepcionistas pueden derivar
+ */
+export function puedeDerivarSolicitudes(): boolean {
+    return esRecepcionista();
+}
+
+/**
+ * Verifica si el usuario puede aprobar/rechazar solicitudes
+ * Solo Regentes pueden aprobar o rechazar
+ */
+export function puedeAprobarRechazarSolicitudes(): boolean {
+    return esRegente();
+}
+
+/**
+ * Verifica si el usuario puede cancelar solicitudes
+ * Apoderados pueden cancelar sus propias solicitudes
+ * Recepcionistas y Regentes pueden cancelar cualquier solicitud
+ */
+export function puedeCancelarSolicitudes(): boolean {
+    return esApoderado() || esRecepcionista() || esRegente();
+}
+
+/**
+ * Verifica si el usuario puede ver el tab de solicitudes individuales
+ * Todos excepto profesores pueden ver solicitudes individuales
+ */
+export function puedeVerTabIndividual(): boolean {
+    return !esProfesor();
+}
+
+/**
+ * Verifica si el usuario puede ver el tab de solicitudes masivas
+ * Todos excepto apoderados pueden ver solicitudes masivas
+ */
+export function puedeVerTabMasiva(): boolean {
+    return !esApoderado();
+}
+
 /**
  * Verifica si el usuario puede gestionar cursos (crear, editar, eliminar)
  * Solo Director y Admin tienen estos permisos

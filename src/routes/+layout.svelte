@@ -85,6 +85,17 @@
     },
   ];
 
+  /*
+   * NEW LOGIC:
+   * Filter displayed items based on strict roles if necessary to hide Dashboard/etc for Apoderados.
+   */
+  const displayedMenuItems = $derived.by(() => {
+    if (currentUser?.rol === "Apoderado") {
+      return menuItems.filter((i) => i.label === "Retiros Tempranos");
+    }
+    return menuItems;
+  });
+
   const reportesSubmenu = [
     {
       label: "Usuarios y Roles",
@@ -153,7 +164,35 @@
   // Función para verificar si el usuario puede acceder a un módulo
   function canAccessModule(modulo: ModuloSistema | null): boolean {
     if (!modulo) return true; // Dashboard y módulos sin permiso siempre accesibles
-    return authStore.puedeAccederModulo(modulo);
+    
+    // ⭐ EXCEPCIÓN: Apoderados siempre pueden acceder a retiros_tempranos
+    if (currentUser?.rol === "Apoderado" && modulo === "retiros_tempranos") {
+      console.log("✅ [canAccessModule] Apoderado puede acceder a retiros_tempranos");
+      return true;
+    }
+    
+    // ⭐ EXCEPCIÓN: Profesores siempre pueden acceder a retiros_tempranos
+    if (currentUser?.rol?.toLowerCase() === "profesor" && modulo === "retiros_tempranos") {
+      console.log("✅ [canAccessModule] Profesor puede acceder a retiros_tempranos");
+      return true;
+    }
+    
+    // ⭐ EXCEPCIÓN: Recepcionistas siempre pueden acceder a retiros_tempranos
+    const rolLower = currentUser?.rol?.toLowerCase();
+    if ((rolLower === "recepción" || rolLower === "recepcionista") && modulo === "retiros_tempranos") {
+      console.log("✅ [canAccessModule] Recepcionista puede acceder a retiros_tempranos");
+      return true;
+    }
+    
+    // ⭐ EXCEPCIÓN: Regentes siempre pueden acceder a retiros_tempranos
+    if (rolLower === "regente" && modulo === "retiros_tempranos") {
+      console.log("✅ [canAccessModule] Regente puede acceder a retiros_tempranos");
+      return true;
+    }
+    
+    const canAccess = authStore.puedeAccederModulo(modulo);
+    console.log(`🔍 [canAccessModule] Módulo: ${modulo}, Rol: ${currentUser?.rol}, Acceso: ${canAccess}`);
+    return canAccess;
   }
 
   function goToProfile() {
@@ -238,7 +277,7 @@
       </div>
 
       <nav class="sidebar-nav">
-        {#each menuItems as item}
+        {#each displayedMenuItems as item}
           {#if canAccessModule(item.modulo)}
             <a
               href={item.href}
