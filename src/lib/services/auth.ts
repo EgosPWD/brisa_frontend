@@ -1,7 +1,7 @@
 // Servicio de Autenticación
 /**import type { LoginRequest, LoginResponse, Usuario, StandardApiResponse } from '../types/api.js';
 
-const AUTH_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const AUTH_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const TOKEN_KEY = 'brisa_auth_token';
 const USER_KEY = 'brisa_user_data';
 
