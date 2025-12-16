@@ -199,9 +199,7 @@
 					{#if reporte.curso || reporte.nivel || reporte.gestion}
 						<p class="filtros-aplicados">
 							Filtros: 
-							{#if reporte.curso}
-								Curso: {cursos.find(c => c.id_curso === reporte.curso)?.nombre_curso || cursos.find(c => c.id_curso === reporte.curso) ? `${cursos.find(c => c.id_curso === reporte.curso)?.grado}° ${cursos.find(c => c.id_curso === reporte.curso)?.paralelo} - ${cursos.find(c => c.id_curso === reporte.curso)?.nivel}` : reporte.curso}
-							{/if}
+							{#if reporte.curso}Curso ID {reporte.curso}{/if}
 							{#if reporte.nivel} | Nivel: {reporte.nivel}{/if}
 							{#if reporte.gestion} | Gestión: {reporte.gestion}{/if}
 						</p>

@@ -15,23 +15,6 @@
 	let nivel: 'inicial' | 'primaria' | 'secundaria' | '' = '';
 	let gestion: string = '';
 
-	// Cursos disponibles
-	let cursos: any[] = [];
-	let loadingCursos = false;
-
-	async function cargarCursos() {
-		loadingCursos = true;
-		try {
-			const data = await apiClient.getCourses();
-			cursos = Array.isArray(data) ? data : [];
-		} catch (err) {
-			console.error('Error cargando cursos:', err);
-			cursos = [];
-		} finally {
-			loadingCursos = false;
-		}
-	}
-
 	async function cargarReporte() {
 		loading = true;
 		error = null;
@@ -117,7 +100,6 @@
 	}
 
 	onMount(() => {
-		cargarCursos();
 		cargarReporte();
 	});
 </script>
@@ -131,15 +113,13 @@
 	<div class="filtros-section">
 		<div class="filtros-grid">
 			<div class="form-group">
-				<label for="curso">Curso</label>
-				<select id="curso" bind:value={cursoId} disabled={loadingCursos}>
-					<option value={undefined}>Todos los cursos</option>
-					{#each cursos as curso}
-						<option value={curso.id_curso}>
-							{curso.nombre_curso || `${curso.grado}° ${curso.paralelo} - ${curso.nivel}`}
-						</option>
-					{/each}
-				</select>
+				<label for="curso">Curso (ID)</label>
+				<input 
+					type="number" 
+					id="curso"
+					bind:value={cursoId}
+					placeholder="Ej: 5"
+				/>
 			</div>
 
 			<div class="form-group">

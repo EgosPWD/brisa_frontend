@@ -219,10 +219,6 @@
 			formErrors.ci = true;
 			errorMessages.ci = 'El CI es obligatorio';
 			isValid = false;
-		} else if (administrativo.ci.trim().length < 7) {
-			formErrors.ci = true;
-			errorMessages.ci = 'El CI debe tener al menos 7 caracteres';
-			isValid = false;
 		}
 
 		// Validar Nombres
@@ -279,21 +275,8 @@
 
 	async function guardar() {
 		if (!validarForm()) {
-			// Mostrar toast de error de validación con mensaje específico
-			// Priorizar mensaje del CI si existe
-			if (errorMessages.ci) {
-				toastMessage = errorMessages.ci;
-			} else if (errorMessages.nombres) {
-				toastMessage = errorMessages.nombres;
-			} else if (errorMessages.apellido_paterno) {
-				toastMessage = errorMessages.apellido_paterno;
-			} else if (errorMessages.id_cargo) {
-				toastMessage = errorMessages.id_cargo;
-			} else if (errorMessages.correo) {
-				toastMessage = errorMessages.correo;
-			} else {
-				toastMessage = 'Por favor, complete todos los campos requeridos correctamente';
-			}
+			// Mostrar toast de error de validación
+			toastMessage = 'Por favor, complete todos los campos requeridos correctamente';
 			toastType = 'error';
 			return;
 		}
@@ -435,7 +418,7 @@
 				<h3>Información Personal</h3>
 				<div class="form-row single">
 					<div class="form-group">
-						<label>CI *</label>
+						<label class:error={formErrors.ci}>CI *</label>
 						<input
 							type="text"
 							bind:value={administrativo.ci}
@@ -462,7 +445,7 @@
 
 				<div class="form-row">
 					<div class="form-group">
-						<label>Nombres *</label>
+						<label class:error={formErrors.nombres}>Nombres *</label>
 						<input
 							type="text"
 							bind:value={administrativo.nombres}
@@ -480,7 +463,7 @@
 
 				<div class="form-row single">
 					<div class="form-group">
-						<label>Apellido Paterno *</label>
+						<label class:error={formErrors.apellido_paterno}>Apellido Paterno *</label>
 						<input
 							type="text"
 							bind:value={administrativo.apellido_paterno}
@@ -511,7 +494,7 @@
 				<h3>Información de Contacto</h3>
 				<div class="form-row single">
 					<div class="form-group">
-						<label>Correo Electrónico</label>
+						<label class:error={formErrors.correo}>Correo Electrónico</label>
 						<input
 							type="email"
 							bind:value={administrativo.correo}
@@ -553,7 +536,7 @@
 				<h3>Información Laboral</h3>
 				<div class="form-row single">
 					<div class="form-group">
-						<label>Cargo *</label>
+						<label class:error={formErrors.id_cargo}>Cargo *</label>
 						<select
 							bind:value={administrativo.id_cargo}
 							on:change={() => validarCampo('id_cargo', administrativo.id_cargo)}
@@ -598,7 +581,7 @@
 				</div>
 				<div class="form-row single">
 					<div class="form-group">
-						<label>Horario de Entrada *</label>
+						<label class:error={formErrors.horario_entrada}>Horario de Entrada *</label>
 						<input
 							type="time"
 							bind:value={administrativo.horario_entrada}
@@ -612,7 +595,7 @@
 						{/if}
 					</div>
 					<div class="form-group">
-						<label>Horario de Salida *</label>
+						<label class:error={formErrors.horario_salida}>Horario de Salida *</label>
 						<input
 							type="time"
 							bind:value={administrativo.horario_salida}
@@ -852,24 +835,27 @@
 		resize: vertical;
 		min-height: 80px;
 	}
+	label.error {
+		color: #dc2626;
+	}
 	input.error,
 	select.error {
-		border-color: #dc2626;
-		border-width: 2px;
-		background-color: #fff;
+		border-color: #fca5a5;
+		background-color: #fef2f2;
+		box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 	}
 	input.error:focus,
 	select.error:focus {
 		border-color: #dc2626;
-		box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+		box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 	}
 	.error-message {
 		color: #dc2626;
-		font-size: 0.875rem;
-		margin-top: 6px;
-		line-height: 1.4;
+		font-size: 0.75rem;
+		margin-top: 4px;
+		line-height: 1.3;
 		display: block;
-		font-weight: 500;
+		font-weight: 400;
 	}
 	.spinner {
 		display: inline-block;
