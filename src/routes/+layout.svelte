@@ -22,6 +22,7 @@
 	let { children } = $props();
 	let sidebarCollapsed = $state(false);
 	let reportesManuallyToggled = $state(false);
+	let reportesSectionsExpanded = $state<Record<string, boolean>>({});
 	let showLogoutDialog = $state(false);
 	const isAuthenticated = $derived(authStore.isAuthenticated);
 	const currentUser = $derived(authStore.user);
@@ -73,12 +74,6 @@
 			modulo: "profesores" as ModuloSistema,
 		},
 		{
-			label: "Administrativos",
-			icon: "briefcase",
-			href: "/administrativos",
-			modulo: "administracion" as ModuloSistema,
-		},
-		{
 			label: "Retiros Tempranos",
 			icon: "clock",
 			href: "/retiros",
@@ -105,14 +100,11 @@
 	];
 
 	const reportesSubmenu = [
-		{
-			label: "Usuarios y Roles",
-			icon: "users",
-			items: [{ label: "Listado de Usuarios", href: "/Usuarios_Roles" }],
-		},
+	
 		{
 			label: "Estudiantes",
 			icon: "graduation-cap",
+			prefix: "/reportes/estudiantes",
 			items: [
 				{ label: "Listado General", href: "/reportes" },
 				{
@@ -133,6 +125,7 @@
 		{
 			label: "Académico",
 			icon: "book-open",
+			prefix: "/reportes/academico",
 			items: [
 				{
 					label: "Profesores Asignados",
@@ -155,6 +148,7 @@
 		{
 			label: "Esquelas",
 			icon: "clipboard-list",
+			prefix: "/reportes/esquelas",
 			items: [
 				{ label: "Por Emisor", href: "/reportes/esquelas/por-emisor" },
 				{
@@ -296,6 +290,18 @@
 			sidebarCollapsed = false;
 		}
 	}
+
+	function isReportesSectionExpanded(prefix: string) {
+		const override = reportesSectionsExpanded[prefix];
+		return override ?? currentPath.startsWith(prefix);
+	}
+
+	function toggleReportesSection(prefix: string) {
+		reportesSectionsExpanded = {
+			...reportesSectionsExpanded,
+			[prefix]: !isReportesSectionExpanded(prefix),
+		};
+	}
 </script>
 
 <svelte:head>
@@ -390,7 +396,11 @@
 							<div class="submenu">
 								{#each reportesSubmenu as section}
 									<div class="submenu-section">
-										<div class="submenu-section-header">
+										<button
+											type="button"
+											class="submenu-section-header submenu-section-toggle"
+											onclick={() => toggleReportesSection(section.prefix)}
+										>
 											<span class="submenu-icon"
 												>{@html getIconSvg(
 													section.icon,
@@ -399,19 +409,31 @@
 											<span class="submenu-label"
 												>{section.label}</span
 											>
-										</div>
-										<div class="submenu-items">
-											{#each section.items as subItem}
-												<a
-													href={subItem.href}
-													class="submenu-item"
-													class:active={currentPath ===
-														subItem.href}
+												<span
+													class="submenu-expand-icon"
+													class:expanded={isReportesSectionExpanded(section.prefix)}
 												>
-													{subItem.label}
-												</a>
-											{/each}
-										</div>
+													{@html getIconSvg(
+														isReportesSectionExpanded(section.prefix)
+															? "chevron-down"
+															: "chevron-right",
+													)}
+												</span>
+										</button>
+										{#if isReportesSectionExpanded(section.prefix)}
+											<div class="submenu-items">
+												{#each section.items as subItem}
+													<a
+														href={subItem.href}
+														class="submenu-item"
+														class:active={currentPath ===
+															subItem.href}
+													>
+														{subItem.label}
+													</a>
+												{/each}
+											</div>
+										{/if}
 									</div>
 								{/each}
 							</div>
@@ -448,7 +470,7 @@
 					>
 						{@html getIconSvg("bell")}
 						{#if unreadCount > 0}
-							<span class="badge">{unreadCount}</span>
+							<span class="notification-badge">{unreadCount}</span>
 						{/if}
 					</button>
 					<button class="user-profile" onclick={goToProfile}>
@@ -474,15 +496,25 @@
 	</div>
 
 	{#if showModal}
-		<div class="notifications-modal" onclick={() => (showModal = false)}>
+		<div
+			class="notifications-modal"
+			role="button"
+			tabindex="0"
+			onclick={(e) => {
+				if (e.target === e.currentTarget) closeNotifications();
+			}}
+			onkeydown={(e) => {
+				if (e.key === "Escape" || e.key === "Enter" || e.key === " ") closeNotifications();
+			}}
+		>
 			<div class="modal-content">
 				<h2>Notificaciones</h2>
 				<button onclick={markAllAsRead}>Marcar todas como leídas</button
 				>
 				{#if loadingNotifications}
-					<p>Cargando...</p>
+					<p class="loading">Cargando...</p>
 				{:else if notifications.length === 0}
-					<p>No hay notificaciones.</p>
+					<p class="empty">No hay notificaciones.</p>
 				{:else}
 					{#each notifications as notif}
 						<div
